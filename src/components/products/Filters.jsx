@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { productsActions } from "../../store/products-slice";
 import { useDispatch, useSelector } from "react-redux";
 
-import { BRANDS, CATEGORIES } from "../../utils/constants";
+//import { BRANDS, CATEGORIES } from "../../utils/constants";
 import { formatPrice } from '../../utils/helpers';
 
 // const initialFilters = {

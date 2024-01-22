@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 import PageHero from '../layout/PageHero';
-import { ABOUT_IMG_URL } from '../utils/constants';
+//import { ABOUT_IMG_URL } from '../utils/constants';
 
 
 const containerVariants = {
