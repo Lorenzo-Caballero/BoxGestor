@@ -50,7 +50,7 @@ const About = () => {
                 <div className='w-[85vw] flex mx-auto'>
                     <div className='grid sm:grid-cols-1 md:grid-cols-2 gap-8'>
                         <div>
-                            <img src={ABOUT_IMG_URL} alt="" />
+                            <img alt="" />
                         </div>
                         <div>
                             <motion.h2 className='text-4xl lg:text-6xl font-bold capitalize tracking-wider'

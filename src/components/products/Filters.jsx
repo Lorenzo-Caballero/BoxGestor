@@ -77,32 +77,13 @@ const Filters = ({ filters }) => {
         {/* category */}
         <div className="mb-6">
           <h4 className="mb-1 font-bold capitalize text-lg">category</h4>
-          {CATEGORIES.map((c, index) => {
-            return (
-              <button
-                key={index}
-                type="button"
-                name="category"
-                onClick={updateFilters}
-                // className="block py-1 capitalize text-gray-600"
-                className={`block py-1 capitalize text-gray-600 ${filters.category === c ? 'border-b-2 border-primary' : ''}`}
-              >
-                {c}
-              </button>
-            );
-          })}
+        
         </div>
         {/* company */}
         <div className="mb-6">
           <h4 className="mb-2 font-bold capitalize text-lg">company</h4>
           <select name="company" className="form-select rounded cursor-pointer bg-gray-200 border-0 py-1" onChange={updateFilters} >
-            {BRANDS.map((c, index) => {
-              return (
-                <option key={index} value={c} >
-                  {c}
-                </option>
-              );
-            })}
+       
           </select>
         </div>
         {/* price */}

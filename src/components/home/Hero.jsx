@@ -141,7 +141,7 @@ const Hero = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: .4 }}
                     >
-                        <img className="h-[75%]" src={HERO_URL} alt="" />
+                        <img className="h-[75%]" alt="" />
                     </motion.div>
                 </div>
             </div>
