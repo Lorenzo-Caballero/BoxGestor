@@ -2,7 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://Lorenzo-Caballero.github.io/template-react/",
+  "homepage": "https://lorenzo-caballero.github.io/react-template/",
   "dependencies": {
     "@heroicons/react": "^1.0.6",
     "@reduxjs/toolkit": "^1.8.0",
