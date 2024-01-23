@@ -81,10 +81,9 @@ const About = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: .5, duration: .8 }}
                             >
-                                ¡Bienvenidos a Fauno Tattoo!
-                                Soy Fauno, tatuador apasionado de la costa de Mar Chiquita, Santa Clara del Mar, Argentina. Mi obsesión es transformar tu inspiración en tinta, creando piezas que reflejen tu esencia.
+                                Buenas! Soy Fauno, tatuador apasionado de la costa de Mar Chiquita, Santa Clara del Mar, Argentina. Mi obsesión es transformar tu inspiración en tinta, creando piezas que reflejen tu esencia.
                                 En Fauno Tattoo, fusiono la fuerza del arte con la pasión por el tatuaje. Cada diseño es una expresión, una marca de autenticidad en tu piel.
-                                Listo para dar vida a tus ideas, ¡hablemos de tu próximo tatuaje en Fauno Tattoo!
+                                Listo para dar vida a tus ideas, ¡hablemos de tu próximo tatuaje!
                             </motion.p>
                         </div>
                     </div>

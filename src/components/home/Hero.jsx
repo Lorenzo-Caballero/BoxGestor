@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 import { motion } from 'framer-motion';
 
 const Hero = () => {
-
-
+  const phoneNumber = '2233407440';
+  const message = encodeURIComponent('Hola Fauno! Quiero reservar un turno.');
+  const whatsappLink = `https://wa.me/${phoneNumber}?text=${message}`;
 
 
   const underlineAnimate = {
@@ -119,8 +120,8 @@ const Hero = () => {
             >
 
 
-¡Explorá diseños, reservá fácilmente y obtené descuentos exclusivos! Viví una experiencia artística y tecnologíca en Fauno Tattoo Web.
-              
+              ¡Explorá diseños, reservá fácilmente y obtené descuentos exclusivos! Viví una experiencia artística y tecnologíca en Fauno Tattoo Web.
+
             </motion.p>
             <motion.div
               variants={linksAnimate}
@@ -135,14 +136,15 @@ const Hero = () => {
                   Ver diseños
                 </motion.button>
               </Link>
-              <Link to='/products'>
-                <motion.button className="px-4 py-2 ml-4 font-bold bg-white border-4 border-primary rounded-full shadow-md"
+              <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                <motion.button
+                  className="px-4 py-2 ml-4 font-bold bg-white border-4 border-primary rounded-full shadow-md"
                   variants={buttonVariants}
                   whileHover="hover"
                 >
                   Reservar turno
                 </motion.button>
-              </Link>
+              </a>
             </motion.div>
           </div>
           <motion.div className="block mx-auto"
