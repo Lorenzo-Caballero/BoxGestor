@@ -58,10 +58,10 @@ const Login = () => {
     >
       <div className="w-[320px] sm:w-[400px] rounded shadow-xl border-2 border-solid px-4 sm:px-8 py-20 mx-auto">
         <h2 className="text-3xl uppercase tracking-wider font-bold text-center mb-12 select-none">
-          <span className="text-primary">Argen</span>
-          <span className="text-secondary-200">Tienda</span>
+          <span className="text-primary">Fauno</span>
+          <span className="text-secondary-200">Tattoo</span>
         </h2>
-        <div className="btn flex justify-center items-center">
+        {   /*   <div className="btn flex justify-center items-center">
           <GoogleLogin
             clientId={clientID}
             onSuccess={onSuccess}
@@ -69,7 +69,7 @@ const Login = () => {
             cookiePolicy={"single_host_policy"}
           />
         </div>
-
+*/}
         <button
           type="submit"
           className="px-4 py-2 block mt-3 ml-auto text-primary border border-primary hover:text-white hover:bg-primary rounded-md"
@@ -78,7 +78,7 @@ const Login = () => {
           Login
         </button>
 
-        <p className="text-center mt-6">Not registered? <Link to='/register' className="text-primary">Create an account</Link> </p>
+        <p className="text-center mt-6">Aún no estas registrado? <Link to='/register' className="text-primary">Crea una cuenta!</Link> </p>
       </div>
     </motion.div>
   );

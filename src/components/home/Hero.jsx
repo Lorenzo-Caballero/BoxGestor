@@ -119,7 +119,7 @@ const Hero = () => {
             >
 
 
-¡Explorá diseños, reservá fácilmente y obtené descuentos exclusivos en Fauno Tattoo Web! Viví una experiencia artística y tecnologíca en Fauno Tattoo Web.
+¡Explorá diseños, reservá fácilmente y obtené descuentos exclusivos! Viví una experiencia artística y tecnologíca en Fauno Tattoo Web.
               
             </motion.p>
             <motion.div
