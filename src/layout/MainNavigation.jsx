@@ -174,17 +174,17 @@ const MainNavigation = () => {
       >
         <li className="border-b-2 border-zinc-300 w-full text-lg font-semibold text-gray-600">
           <NavLink to="/" onClick={navHandler}>
-            Home
+            Inicio
           </NavLink>
         </li>
         <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
           <NavLink to="/about" onClick={navHandler}>
-            About
+            Sobre Mi
           </NavLink>
         </li>
         <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
           <NavLink to="/products" onClick={navHandler}>
-            Products
+            Diseños
           </NavLink>
         </li>
         <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
