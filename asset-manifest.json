@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/react-template/static/css/main.a18031f8.css",
-    "main.js": "/react-template/static/js/main.b7477252.js",
+    "main.js": "/react-template/static/js/main.af533963.js",
     "static/media/machine.png": "/react-template/static/media/machine.241758e4b191cd0c68f6.png",
     "index.html": "/react-template/index.html",
     "static/media/HambergurMenu.svg": "/react-template/static/media/HambergurMenu.9955f00c01a0988ffe2fb16386e78554.svg",
     "main.a18031f8.css.map": "/react-template/static/css/main.a18031f8.css.map",
-    "main.b7477252.js.map": "/react-template/static/js/main.b7477252.js.map"
+    "main.af533963.js.map": "/react-template/static/js/main.af533963.js.map"
   },
   "entrypoints": [
     "static/css/main.a18031f8.css",
-    "static/js/main.b7477252.js"
+    "static/js/main.af533963.js"
   ]
 }
