@@ -7,30 +7,30 @@ import PageHero from '../layout/PageHero';
 
 const containerVariants = {
     hidden: {
-      opacity: 0
+        opacity: 0
     },
     visible: {
-      opacity: 1,
-      transition: { duration: .3 }
+        opacity: 1,
+        transition: { duration: .3 }
     },
     exit: {
-      x: '-100vw',
-      transition: { ease: 'easeInOut' }
+        x: '-100vw',
+        transition: { ease: 'easeInOut' }
     }
-  };
+};
 
-  const underlineAnimate = {
+const underlineAnimate = {
     hidden: {
-      opacity: 0,
-      pathLength: 0,
+        opacity: 0,
+        pathLength: 0,
     },
     visible: {
-      opacity: 1,
-      pathLength: 1,
-      transition: {
-        delay: 1,
-        duration: .8,
-      },
+        opacity: 1,
+        pathLength: 1,
+        transition: {
+            delay: 1,
+            duration: .8,
+        },
     },
 };
 
@@ -45,7 +45,7 @@ const About = () => {
             animate="visible"
             exit="exit"
         >
-            <PageHero title="about" />
+            <PageHero title="Sobre mi" />
             <div className='w-full py-32'>
                 <div className='w-[85vw] flex mx-auto'>
                     <div className='grid sm:grid-cols-1 md:grid-cols-2 gap-8'>
@@ -58,7 +58,7 @@ const About = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: .5 }}
                             >
-                                Our Story
+                               Mi historia
                                 <svg
                                     className="svg-underline stroke-[#ffb81c] relative z-10 w-1/2"
                                     strokeLinejoin="round"
@@ -67,7 +67,7 @@ const About = () => {
                                     viewBox="0 0 422 12"
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
-                                    >
+                                >
                                     <motion.path
                                         d="M3 9C118.957 4.47226 364.497 -1.86658 419 9"
                                         variants={underlineAnimate}
@@ -81,16 +81,10 @@ const About = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: .5, duration: .8 }}
                             >
-                                Lorem ipsum, dolor sit amet consectetur adipisicing elit. Fugiat
-                                accusantium sapiente tempora sed dolore esse deserunt eaque
-                                excepturi, delectus error accusamus vel eligendi, omnis beatae.
-                                Quisquam, dicta. Eos quod quisquam esse recusandae vitae neque
-                                dolore, obcaecati incidunt sequi blanditiis est exercitationem
-                                molestiae delectus saepe odio eligendi modi porro eaque in libero
-                                minus unde sapiente consectetur architecto. Ullam rerum, nemo iste
-                                ex, eaque perspiciatis nisi, eum totam velit saepe sed quos
-                                similique amet. Ex, voluptate accusamus nesciunt totam vitae esse
-                                iste.
+                                ¡Bienvenidos a Fauno Tattoo!
+                                Soy Fauno, tatuador apasionado de la costa de Mar Chiquita, Santa Clara del Mar, Argentina. Mi obsesión es transformar tu inspiración en tinta, creando piezas que reflejen tu esencia.
+                                En Fauno Tattoo, fusiono la fuerza del arte con la pasión por el tatuaje. Cada diseño es una expresión, una marca de autenticidad en tu piel.
+                                Listo para dar vida a tus ideas, ¡hablemos de tu próximo tatuaje en Fauno Tattoo!
                             </motion.p>
                         </div>
                     </div>
