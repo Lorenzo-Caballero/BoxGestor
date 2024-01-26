@@ -13,7 +13,7 @@ const ChatButton = () => {
   const chatRef = useRef(null);
 
   const obtenerRespuestaFauno = async (userMessage) => {
-    const apikey = "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";
+    const apikey = process.env.REACT_APP_OPENAI_API_KEY;
     try {
       setEscribiendo(true);
       const respuesta = await axios.post(
