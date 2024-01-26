@@ -84,7 +84,7 @@ const Hero = () => {
 
   return (
     <div>
-      <div className="absolute top-1/4 -left-8 w-40 h-40 xl:w-72 xl:h-60 bg-secondary-200 rounded-2xl transform-gpu -rotate-12 z-[-1]"></div>
+      <div className="absolute top-1/4 -left-8 w-40 h-40 xl:w-72 xl:h-60 bg-purple-100 rounded-2xl transform-gpu -rotate-12 z-[-1]"></div>
       <div className='w-full h-screen flex flex-col justify-between px-8 py-12 z-10'>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div className="flex flex-col mt-16">
