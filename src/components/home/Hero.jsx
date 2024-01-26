@@ -96,22 +96,7 @@ const Hero = () => {
               Diseños Detallados
               <br />
               Y Exclusivos
-              <svg
-                className="svg-underline stroke-[#ffb81c] relative z-10 w-64 md:w-1/2 lg:w-3/4"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                strokeWidth={5}
-                viewBox="0 0 422 12"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <motion.path
-                  d="M3 9C118.957 4.47226 364.497 -1.86658 419 9"
-                  variants={underlineAnimate}
-                  initial="hidden"
-                  animate="visible"
-                />
-              </svg>
+             
             </motion.h1>
             <motion.p className="text-lg py-6"
               variants={textAnimate}
