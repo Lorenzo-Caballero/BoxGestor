@@ -6,7 +6,7 @@ import Hero from "../components/home/Hero";
 import Overview from '../components/home/Overview';
 import FeaturedProducts from '../components/home/FeaturedProducts';
 import TheServices from '../components/home/TheServices';
-import TheContact from '../components/home/TheContact';
+//import TheContact from '../components/home/TheContact';
 
 
 const containerVariants = {
@@ -36,7 +36,6 @@ const Home = () => {
       <Overview />
       <FeaturedProducts />
       <TheServices />
-      <TheContact />
     </motion.main>
   );
 };
