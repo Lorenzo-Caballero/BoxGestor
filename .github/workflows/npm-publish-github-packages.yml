@@ -33,5 +33,5 @@ jobs:
       - run: npm install
       - run: npm publish
         env:
-          SECRET_API_KEY: ${{secrets.API_KEY}}
+          REACT_APP_OPENAI_API_KEY: ${{ secrets.TWO_SECRET }}
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
