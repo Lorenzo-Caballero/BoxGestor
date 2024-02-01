@@ -1,13 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from 'framer-motion';
-import { FiLogIn } from 'react-icons/fi'
-import { Link } from "react-router-dom";
+import { FiLogIn } from 'react-icons/fi';
+import { Link, useHistory } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../store/actions/auth-actions';
 import TheSpinner from "../layout/TheSpinner";
-import { useEffect } from "react";
-import GoogleLogin from "react-google-login";
-import { gapi } from "gapi-script";
 
 const containerVariants = {
   hidden: {
@@ -23,31 +20,25 @@ const containerVariants = {
   }
 };
 
-
-
-
 const Login = () => {
   const dispatch = useDispatch();
+  const history = useHistory();
   const loading = useSelector((state) => state.ui.loginLoading);
-  const clientID = "417226731712-1inb78b3omeqcd3p6sp37onjl4fv6efq.apps.googleusercontent.com";
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  useEffect(() => {
-    const start = () => {
-      gapi.auth2.init({
-        clientId: clientID,
-      })
-    }
-    gapi.load("client:auth2", start)
-  }, [])
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+  };
 
-  const onSuccess = (response) => {
-    console.log(response)
-  }
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+  };
 
-  const onFailure = () => {
-    console.log("Algo salio mal");
-  }
-
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    dispatch(login(email, password, history));
+  };
 
   return (
     <motion.div className="w-[80%] mx-auto mt-40 mb-52"
@@ -61,24 +52,36 @@ const Login = () => {
           <span className="text-primary">Fauno</span>
           <span className="text-secondary-200">Tattoo</span>
         </h2>
-        {   /*   <div className="btn flex justify-center items-center">
-          <GoogleLogin
-            clientId={clientID}
-            onSuccess={onSuccess}
-            onFailure={onFailure}
-            cookiePolicy={"single_host_policy"}
-          />
-        </div>
-*/}
-        <button
-          type="submit"
-          className="px-4 py-2 block mt-3 ml-auto text-primary border border-primary hover:text-white hover:bg-primary rounded-md"
-        >
-          <span className="inline-flex justify-items-center mr-1"><FiLogIn /> </span>
-          Login
-        </button>
-
-        <p className="text-center mt-6">Aún no estas registrado? <Link to='/register' className="text-primary">Crea una cuenta!</Link> </p>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <input
+              type="email"
+              placeholder="Correo electrónico"
+              className="block w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:border-primary"
+              value={email}
+              onChange={handleEmailChange}
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <input
+              type="password"
+              placeholder="Contraseña"
+              className="block w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:border-primary"
+              value={password}
+              onChange={handlePasswordChange}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 block mt-3 ml-auto text-primary border border-primary hover:text-white hover:bg-primary rounded-md"
+            disabled={loading}
+          >
+            {loading ? <TheSpinner /> : <><span className="inline-flex justify-items-center mr-1"><FiLogIn /></span>Login</>}
+          </button>
+        </form>
+        <p className="text-center mt-6">¿Aún no estás registrado? <Link to='/register' className="text-primary">¡Crea una cuenta!</Link></p>
       </div>
     </motion.div>
   );
