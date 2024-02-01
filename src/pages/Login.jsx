@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
-import { Link, useHistory } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../store/actions/auth-actions';
 import TheSpinner from "../layout/TheSpinner";
@@ -22,7 +22,6 @@ const containerVariants = {
 
 const Login = () => {
   const dispatch = useDispatch();
-  const history = useHistory();
   const loading = useSelector((state) => state.ui.loginLoading);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +36,9 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(login(email, password, history));
+    // Aquí puedes realizar el despacho de la acción de login
+    // y manejar la redirección después de la acción de login
+    console.log("Iniciar sesión...");
   };
 
   return (
