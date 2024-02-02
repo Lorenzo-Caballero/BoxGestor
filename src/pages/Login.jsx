@@ -34,12 +34,43 @@ const Login = () => {
     setPassword(e.target.value);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aquí puedes realizar el despacho de la acción de login
-    // y manejar la redirección después de la acción de login
-    console.log("Iniciar sesión...");
+  
+    const formData = {
+      email: email,
+      password: password
+    };
+  
+    try {
+      const response = await fetch('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        // Guardar el token en el almacenamiento local del navegador
+        localStorage.setItem('token', data.token);
+        // Redireccionar al usuario a la página de inicio
+        history.push('/home');
+      } else {
+        // Manejar el caso de credenciales inválidas
+        const errorData = await response.json();
+        console.error(errorData.message);
+        // Mostrar un mensaje de error al usuario
+        alert('Credenciales inválidas');
+      }
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      // Mostrar un mensaje de error genérico al usuario
+      alert('Error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
+    }
   };
+  
 
   return (
     <motion.div className="w-[80%] mx-auto mt-40 mb-52"
