@@ -1,16 +1,30 @@
 import React, { useState } from "react";
 import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
-import { Link, Redirect } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../store/actions/auth-actions';
 import TheSpinner from "../layout/TheSpinner";
+
+const containerVariants = {
+  hidden: {
+    opacity: 0
+  },
+  visible: {
+    opacity: 1,
+    transition: { duration: .3 }
+  },
+  exit: {
+    x: '-100vw',
+    transition: { ease: 'easeInOut' }
+  }
+};
 
 const Login = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state) => state.ui.loginLoading);
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const [redirect, setRedirect] = useState(false);
+  const history = useHistory();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -32,7 +46,7 @@ const Login = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        setRedirect(true);
+        history.push('/home');
       } else {
         const errorData = await response.json();
         console.error(errorData.message);
@@ -43,10 +57,6 @@ const Login = () => {
       alert('Error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
     }
   };
-
-  if (redirect) {
-    return <Redirect to="/home" />;
-  }
 
   return (
     <motion.div className="w-[80%] mx-auto mt-40 mb-52"
@@ -111,20 +121,6 @@ const SubmitButton = ({ loading }) => {
       {loading ? <TheSpinner /> : <><span className="inline-flex justify-items-center mr-1"><FiLogIn /></span>Login</>}
     </button>
   );
-};
-
-const containerVariants = {
-  hidden: {
-    opacity: 0
-  },
-  visible: {
-    opacity: 1,
-    transition: { duration: .3 }
-  },
-  exit: {
-    x: '-100vw',
-    transition: { ease: 'easeInOut' }
-  }
 };
 
 export default Login;
