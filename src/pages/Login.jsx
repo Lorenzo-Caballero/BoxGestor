@@ -4,6 +4,8 @@ import { FiLogIn } from 'react-icons/fi';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import TheSpinner from "../layout/TheSpinner";
+import { useDispatch } from 'react-redux'; // Cambiado a useDispatch
+import { authActions } from '../store/auth-slice.js'; // Importar el slice de autenticación
 
 const containerVariants = {
   hidden: {
@@ -23,6 +25,8 @@ const Login = () => {
   const loading = useSelector((state) => state.ui.loginLoading);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const navigate = useNavigate();
+  const dispatch = useDispatch(); // Obtener la función de despacho
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -37,21 +41,20 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        withCredentials:true,
         body: JSON.stringify(formData)
       });
 
       if (response.ok) {
-
         const data = await response.json();
         localStorage.setItem('token', data.token);
+        dispatch(authActions.login(data)); // Llamar a la acción de login con los datos del usuario
+
         navigate('/');
       } else {
-        const errorData = await response.json();
-        console.error(errorData);
-        alert('Credenciales inválidas');
+        console.error('Error en la solicitud:', response.status);
+        alert('Error en la solicitud. Por favor, inténtalo de nuevo más tarde.');
       }
-    } catch (error) { 
+    } catch (error) {
       console.error('Error al iniciar sesión:', error);
       alert('Error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
     }
@@ -70,10 +73,10 @@ const Login = () => {
           <span className="text-secondary-200">Tattoo</span>
         </h2>
         <form onSubmit={handleSubmit}>
-        <InputField
+          <InputField
             type="text"
             name="email"
-            placeholder="Contraseña"
+            placeholder="Correo electrónico"
             value={formData.email}
             onChange={handleInputChange}
             required
@@ -88,7 +91,7 @@ const Login = () => {
           />
           <SubmitButton loading={loading} />
         </form>
-        <p className="text-center mt-6">¿Aún no estás registrado? <Link to='/register' className="text-primary">¡Crea una cuenta!</Link></p>
+        <p className="text-center mt-6">¿Aún no tienes una cuenta? <Link to='/register' className="text-primary">¡Regístrate !</Link></p>
       </div>
     </motion.div>
   );
@@ -114,10 +117,10 @@ const SubmitButton = ({ loading }) => {
   return (
     <button
       type="submit"
-      className="px-4 py-2 block mt-3 ml-auto text-primary border border-primary hover:text-white hover:bg-primary rounded-md"
+      className="px-4 py-2 block mt-3 ml-auto text-white bg-primary border border-primary rounded-md hover:bg-opacity-80"
       disabled={loading}
     >
-      {loading ? <TheSpinner /> : <><span className="inline-flex justify-items-center mr-1"><FiLogIn /></span>Login</>}
+      {loading ? <TheSpinner /> : <><FiLogIn className="inline-block text-xl -mt-1 mr-1" />Login</>}
     </button>
   );
 };

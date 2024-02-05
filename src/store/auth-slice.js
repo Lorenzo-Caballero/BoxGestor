@@ -1,11 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-
 const initialState = {
-    isAuthenticated: false,
+    isAuthenticated: localStorage.getItem('token') ? true : false,
     user: null,
-    isAdmin: false,
-    token: ''
+    token: localStorage.getItem('token') || ''
 };
 
 const authSlice = createSlice({
@@ -16,26 +14,24 @@ const authSlice = createSlice({
             const user = action.payload.user;
             state.user = user;
             state.token = action.payload.token;
-            state.isAuthenticated = true
-            if (user.role === 'admin') {
-                state.isAdmin = true
-            }
+            state.isAuthenticated = true;
+            
         },
         register(state, action) {
             const user = action.payload.user;
             state.user = user;
             state.token = action.payload.token;
             state.isAuthenticated = true;
-            state.isAdmin = false;
         },
         logout(state) {
-            // state = initialState;
-            Object.assign(state, initialState);
+            localStorage.removeItem('token'); // Elimina el token del localStorage al cerrar sesión
+            return {
+                ...initialState,
+                isAuthenticated: false // Establece isAuthenticated en false al hacer logout
+            };
         }
     }
 });
-
-
 
 export const authActions = authSlice.actions;
 

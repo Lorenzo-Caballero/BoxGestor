@@ -20,8 +20,10 @@ const MainNavigation = () => {
     setShowNav(!showNav);
   };
 
-  const logoutUser = () => {
-    dispatch(logout(token));
+  const logoutUser = async () => {
+    await dispatch(logout()); // Llama a la acción de logout
+    setShowNav(false); // Cambia el estado local después de que el logout se complete
+    window.location.reload(); // Recarga la página
   };
 
   const svgVariants = {
