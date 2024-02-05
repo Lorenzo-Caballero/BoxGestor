@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
-import { Link, useHistory } from "react-router-dom";
-import { useDispatch, useSelector } from 'react-redux';
-import { login } from '../store/actions/auth-actions';
+import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import TheSpinner from "../layout/TheSpinner";
 
 const containerVariants = {
@@ -21,11 +20,9 @@ const containerVariants = {
 };
 
 const Login = () => {
-  const dispatch = useDispatch();
   const loading = useSelector((state) => state.ui.loginLoading);
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const history = useHistory();
-
+  const navigate = useNavigate();
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -35,24 +32,26 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/login', {
+      const response = await fetch('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/clientes/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
+        withCredentials:true,
         body: JSON.stringify(formData)
       });
 
       if (response.ok) {
+
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        history.push('/home');
+        navigate('/');
       } else {
         const errorData = await response.json();
-        console.error(errorData.message);
+        console.error(errorData);
         alert('Credenciales inválidas');
       }
-    } catch (error) {
+    } catch (error) { 
       console.error('Error al iniciar sesión:', error);
       alert('Error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
     }
@@ -71,10 +70,10 @@ const Login = () => {
           <span className="text-secondary-200">Tattoo</span>
         </h2>
         <form onSubmit={handleSubmit}>
-          <InputField
-            type="email"
+        <InputField
+            type="text"
             name="email"
-            placeholder="Correo electrónico"
+            placeholder="Contraseña"
             value={formData.email}
             onChange={handleInputChange}
             required
