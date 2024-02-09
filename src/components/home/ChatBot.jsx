@@ -28,7 +28,7 @@ const ChatButton = () => {
             {"role": "user", "content": userMessage} 
           ],
           model: "gpt-3.5-turbo",
-          max_tokens: 100,
+          max_tokens: 90,
         },
         {
           headers: {
