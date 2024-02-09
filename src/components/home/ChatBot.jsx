@@ -14,7 +14,7 @@ const ChatButton = () => {
 
   const obtenerRespuestaFauno = async (userMessage) => {
     const response = await axios.get('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai');
-    const apikey = response.data.apikey;
+    const apikey = response[0].data.KEY_AI;
     console.log('API key obtenida:', apikey);
 
     try {
