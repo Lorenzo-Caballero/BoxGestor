@@ -123,16 +123,7 @@ const MainNavigation = () => {
                 Diseños
               </NavLink>
             </li>
-            <li>
-              {isAuthenticated && (
-                <NavLink
-                  className="ml-2 p-2 lg:text-lg font-semibold"
-                  to="/checkout"
-                >
-                  Checkout
-                </NavLink>
-              )}
-            </li>
+           
           </ul>
         </div>
         <div className="hidden md:flex">
