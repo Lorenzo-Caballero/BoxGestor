@@ -108,7 +108,7 @@ const ChatButton = () => {
               value={nuevoMensaje}
               onChange={(e) => setNuevoMensaje(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Escribe tu mensaje aquí"
+              placeholder="Escribí algo acá"
               className="flex-1 border rounded-full px-4 py-2 outline-none"
             />
             <button onClick={handleEnviarMensaje} className="ml-2 bg-purple-300 rounded-full px-4 py-2 text-white font-semibold">Enviar</button>
