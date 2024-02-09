@@ -4,6 +4,7 @@ import { FiMessageSquare, FiX } from 'react-icons/fi'; // Importa el icono de ci
 import { motion } from "framer-motion";
 
 const apiUrl = 'https://api.openai.com/v1/chat/completions';
+const railwayApiUrl = 'https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai';
 
 const ChatButton = () => {
   const [chatAbierto, setChatAbierto] = useState(false);
@@ -13,11 +14,11 @@ const ChatButton = () => {
   const chatRef = useRef(null);
 
   const obtenerRespuestaFauno = async (userMessage) => {
-    const response = await axios.get('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai');
-    const apikey = response[0].data.KEY_AI;
-    console.log('API key obtenida:', apikey);
-
     try {
+      const response = await axios.get(railwayApiUrl);
+      const apikey = response.data[0].KEY_AI;
+      console.log('API key obtenida:', apikey);
+
       setEscribiendo(true);
       const respuesta = await axios.post(
         apiUrl,
@@ -40,9 +41,15 @@ const ChatButton = () => {
       setEscribiendo(false);
       return respuesta.data.choices[0].message.content;
     } catch (error) {
-      console.error('Error al llamar a la API de OpenAI:', error);
-      setEscribiendo(false);
-      return 'Lo siento, hubo un problema al procesar tu solicitud.';
+      if (error.response && error.response.status === 429) {
+        // Si recibimos un error 429, esperamos 5 segundos y luego reintentamos la solicitud
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        return obtenerRespuestaFauno(userMessage); // Reintentar la solicitud
+      } else {
+        console.error('Error al llamar a la API de OpenAI:', error);
+        setEscribiendo(false);
+        return 'Lo siento, hubo un problema al procesar tu solicitud.';
+      }
     }
   };
 
