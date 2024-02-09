@@ -13,7 +13,7 @@ const ChatButton = () => {
   const chatRef = useRef(null);
 
   const obtenerRespuestaFauno = async (userMessage) => {
-    const response = await axios.get('https://nodejs-restapi-mysql-fauno-production.up.railway.app/ai');
+    const response = await axios.get('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai');
     const apikey = response.data.apikey;
     console.log('API key obtenida:', apikey);
 
