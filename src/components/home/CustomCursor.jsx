@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaHandPointer, FaTimesCircle } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
-import ReactTooltip from 'react-tooltip';
 
 const CustomCursor = () => {
   const [cursorType, setCursorType] = useState('default');
@@ -22,10 +21,7 @@ const CustomCursor = () => {
 
   return (
     <div>
-      <ReactTooltip id="custom-cursor" type="error" effect="solid">
-        <span>Texto del Tooltip</span>
-      </ReactTooltip>
-      {/* Cursor personalizado con un icono animado */}
+   
       {cursorType === 'pointer' ? (
         <FaHandPointer
           size={24}
