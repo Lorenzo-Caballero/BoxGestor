@@ -187,6 +187,14 @@ const MainNavigation = () => {
             Diseños
           </NavLink>
         </li>
+        <li>
+              <NavLink
+                className="ml-2 p-2 lg:text-lg font-semibold"
+                to="/games"
+              >
+                Juegos
+              </NavLink>
+            </li>
         <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
           {isAuthenticated && (
             <NavLink to="/checkout" onClick={navHandler}>

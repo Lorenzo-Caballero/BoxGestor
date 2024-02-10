@@ -7,6 +7,7 @@ import Overview from '../components/home/Overview';
 import FeaturedProducts from '../components/home/FeaturedProducts';
 import TheServices from '../components/home/TheServices';
 import ChatBot from '../components/home/ChatBot';
+import CustomCursor from '../components/home/CustomCursor';
 
 
 const containerVariants = {
@@ -32,6 +33,7 @@ const Home = () => {
       animate="visible"
       exit="exit"
     >
+      <CustomCursor/>
       <Hero />
       <Overview />
       <FeaturedProducts />
