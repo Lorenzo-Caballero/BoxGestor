@@ -25,6 +25,7 @@ import LoginRedirect from "./components/auth/LoginRedirect";
 import RegisterRedirect from "./components/auth/RegisterRedirect";
 import DashboardRedirect from "./components/auth/DashboardRedirect";
 import HomeRedirect from "./components/auth/HomeRedirect";
+import Games from "./components/home/Games";
 
 
 
@@ -51,6 +52,7 @@ const App = () => {
           <Route element={<HomeRedirect />}>
             <Route path="/" element={<Home />} />
             <Route path="/react-template" element={<Home />} />
+            <Route path="/games" element={<Games/>} />
             <Route path="/about" element={<About />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
