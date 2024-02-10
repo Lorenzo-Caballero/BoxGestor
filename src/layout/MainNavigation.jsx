@@ -9,8 +9,12 @@ import NavCartButton from "../components/cart/NavCartButton";
 import {useAuth} from "../components/context/AuthContext";
 const MainNavigation = () => {
   const [showNav, setShowNav] = useState(false);
-  const { isAuthenticated, logout } = useAuth(); // Obtenemos los valores del contexto
+  const { isAuthenticated, logout, user } = useAuth(); // Obtenemos los valores del contexto
+  const [showDropdown, setShowDropdown] = useState(false); // Estado para controlar el dropdown
 
+  const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+  };
   const navHandler = () => {
     setShowNav(!showNav);
   };
@@ -138,15 +142,39 @@ const MainNavigation = () => {
               </motion.button>
             </NavLink>
           )}
-          {isAuthenticated && (
-            <motion.button
-              onClick={logoutUser}
-              className="border-primary border-4 text-primary font-bold px-4 py-2 ml-2 rounded-full shadow-lg"
-              variants={buttonVariants}
-              whileHover="hover"
-            >
-              Logout
-            </motion.button>
+       {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+            <div className="relative">
+              <button
+                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
+                onClick={toggleDropdown}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-gray-700"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
+              </button>
+              {showDropdown && (
+                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+                  <p className="p-2">{user}</p>
+                  <button
+                    onClick={logoutUser}
+                    className="p-2 w-full text-left hover:bg-gray-200"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <div className="md:hidden cursor-pointer" onClick={navHandler}>
