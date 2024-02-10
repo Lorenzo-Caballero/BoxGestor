@@ -131,7 +131,6 @@ const MainNavigation = () => {
           </ul>
         </div>
         <div className="hidden md:flex">
-          <NavCartButton />
           {!isAuthenticated && (
             <NavLink to="/login">
               <motion.button className="border-primary border-4 text-primary font-bold px-4 py-2 ml-2 rounded-full shadow-lg"
@@ -210,7 +209,6 @@ const MainNavigation = () => {
         </li>
         <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
           <NavLink
-            className="ml-2 p-2 lg:text-lg font-semibold"
             to="/games"
           >
             Juegos
@@ -218,9 +216,7 @@ const MainNavigation = () => {
         </li>
 
         <div className="flex flex-col items-center m-4 space-y-4">
-          <div onClick={navHandler}>
-            <NavCartButton />
-          </div>
+        
           {!isAuthenticated && (
             <NavLink
               onClick={navHandler}
@@ -230,13 +226,39 @@ const MainNavigation = () => {
               Login
             </NavLink>
           )}
-          {isAuthenticated && (
-            <button
-              onClick={logoutUser}
-              className="border-primary border-4 text-primary font-bold px-9 py-2 ml-2 rounded-full shadow-lg"
-            >
-              Logout
-            </button>
+          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+            <div className="relative">
+              <button
+                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
+                onClick={toggleDropdown}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-gray-700"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
+              </button>
+              {showDropdown && (
+                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+                  <p className="p-2">{user}</p>
+                  <button
+                    onClick={logoutUser}
+                    className="p-2 w-full text-left hover:bg-gray-200"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </ul>
