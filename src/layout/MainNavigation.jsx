@@ -17,7 +17,6 @@ const MainNavigation = () => {
 
   const logoutUser = async () => {
     logout(); // Llama a la función de logout del contexto
-
   };
 
   const svgVariants = {

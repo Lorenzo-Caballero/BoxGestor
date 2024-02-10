@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,7 +20,7 @@ const containerVariants = {
 };
 
 const Login = () => {
-  const { isAuthenticated, login } = useAuth(); // Obtenemos los valores del contexto
+  const { login } = useAuth(); // Obtenemos los valores del contexto
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false); // Estado local para manejar la carga
   const navigate = useNavigate();
@@ -46,7 +46,8 @@ const Login = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        login(data); // Utilizamos la función de login del contexto
+        console.log(data);
+        login(data.email); // Utilizamos la función de login del contexto
 
         navigate('/');
       } else {
