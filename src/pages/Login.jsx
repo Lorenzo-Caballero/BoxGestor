@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useAuth } from "../components/context/AuthContext";
 import TheSpinner from "../layout/TheSpinner";
-import { useDispatch } from 'react-redux'; // Cambiado a useDispatch
-import { authActions } from '../store/auth-slice.js'; // Importar el slice de autenticación
 
 const containerVariants = {
   hidden: {
@@ -22,11 +20,11 @@ const containerVariants = {
 };
 
 const Login = () => {
-  const loading = useSelector((state) => state.ui.loginLoading);
+  const { isAuthenticated, login } = useAuth(); // Obtenemos los valores del contexto
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false); // Estado local para manejar la carga
   const navigate = useNavigate();
-  const dispatch = useDispatch(); // Obtener la función de despacho
-
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -34,6 +32,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Activamos la carga al enviar el formulario
 
     try {
       const response = await fetch('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/clientes/login', {
@@ -47,7 +46,7 @@ const Login = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        dispatch(authActions.login(data)); // Llamar a la acción de login con los datos del usuario
+        login(data); // Utilizamos la función de login del contexto
 
         navigate('/');
       } else {
@@ -57,6 +56,8 @@ const Login = () => {
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
       alert('Error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
+    } finally {
+      setLoading(false); // Desactivamos la carga después de recibir una respuesta
     }
   };
 

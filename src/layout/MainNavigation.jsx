@@ -2,28 +2,22 @@ import React from "react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { XIcon } from "@heroicons/react/solid";
-import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import machinetattoo from '../assets/machine.png';
 import HambergurMenu from "../assets/HambergurMenu.svg";
-// import Logo from '../assets/logo.svg';
 import NavCartButton from "../components/cart/NavCartButton";
-import { logout } from "../store/actions/auth-actions";
-
+import {useAuth} from "../components/context/AuthContext";
 const MainNavigation = () => {
   const [showNav, setShowNav] = useState(false);
-  const dispatch = useDispatch();
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-  const token = useSelector((state) => state.auth.token);
+  const { isAuthenticated, logout } = useAuth(); // Obtenemos los valores del contexto
 
   const navHandler = () => {
     setShowNav(!showNav);
   };
 
   const logoutUser = async () => {
-    await dispatch(logout()); // Llama a la acción de logout
-    setShowNav(false); // Cambia el estado local después de que el logout se complete
-    window.location.reload(); // Recarga la página
+    logout(); // Llama a la función de logout del contexto
+
   };
 
   const svgVariants = {
@@ -188,14 +182,14 @@ const MainNavigation = () => {
           </NavLink>
         </li>
         <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
-              <NavLink
-                className="ml-2 p-2 lg:text-lg font-semibold"
-                to="/games"
-              >
-              Juegos
-              </NavLink>
-            </li>
-      
+          <NavLink
+            className="ml-2 p-2 lg:text-lg font-semibold"
+            to="/games"
+          >
+            Juegos
+          </NavLink>
+        </li>
+
         <div className="flex flex-col items-center m-4 space-y-4">
           <div onClick={navHandler}>
             <NavCartButton />
