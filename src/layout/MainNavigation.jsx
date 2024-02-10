@@ -192,16 +192,10 @@ const MainNavigation = () => {
                 className="ml-2 p-2 lg:text-lg font-semibold"
                 to="/games"
               >
-                Juegos
+              Juegos
               </NavLink>
             </li>
-        <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
-          {isAuthenticated && (
-            <NavLink to="/checkout" onClick={navHandler}>
-              Checkout
-            </NavLink>
-          )}
-        </li>
+      
         <div className="flex flex-col items-center m-4 space-y-4">
           <div onClick={navHandler}>
             <NavCartButton />
