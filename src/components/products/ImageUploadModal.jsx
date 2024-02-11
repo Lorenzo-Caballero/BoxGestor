@@ -18,7 +18,9 @@ const ImageUploadModal = ({ isOpen, onClose }) => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    convertImageToBase64(file);
+    if (file) {
+      convertImageToBase64(file);
+    }
   };
 
   const convertImageToBase64 = (file) => {
@@ -31,7 +33,6 @@ const ImageUploadModal = ({ isOpen, onClose }) => {
       }));
     };
   };
-
   const shortenImageUrl = async (imageUrl) => {
     try {
       const response = await axios.get(`https://api.tinyurl.com/dev/api-create.php?url=${imageUrl}`);

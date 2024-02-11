@@ -159,7 +159,7 @@ const MainNavigation = () => {
           <ImageUploadModal
             isOpen={isImageModalOpen}
             onClose={closeImageModal}
-          
+
           />
           {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
             <div className="relative">
@@ -267,38 +267,58 @@ const MainNavigation = () => {
               )}
             </div>
           )}
-          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
-            <div className="relative">
-              <button
-                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
-                onClick={toggleDropdown}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-gray-700"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+
+          {isAuthenticated && (
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <button
+                  className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center mb-2"
+                  onClick={toggleDesignDropdown}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
-              </button>
-              {showDropdown && (
-                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
-                  <p className="p-2">{user}</p>
-                  <button
-                    onClick={logoutUser}
-                    className="p-2 w-full text-left hover:bg-gray-200"
+                  +
+                </button>
+                {showDesignDropdown && (
+                  <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+                    <button
+                      className="p-2 w-full text-left hover:bg-gray-200"
+                    >
+                      Diseño
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center"
+                  onClick={toggleDropdown}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-gray-700"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    Logout
-                  </button>
-                </div>
-              )}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
+                  </svg>
+                </button>
+                {showDropdown && (
+                  <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+                    <p className="p-2">{user}</p>
+                    <button
+                      onClick={logoutUser}
+                      className="p-2 w-full text-left hover:bg-gray-200"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
