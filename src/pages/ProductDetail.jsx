@@ -11,34 +11,29 @@ import { getProductDetails } from '../store/actions/products-actions';
 import { formatPrice } from '../utils/helpers';
 import TheSpinner from '../layout/TheSpinner';
 
-
 const containerVariants = {
     hidden: {
-      opacity: 0
+        opacity: 0
     },
     visible: {
-      opacity: 1,
-      transition: { duration: .3 }
+        opacity: 1,
+        transition: { duration: .3 }
     },
     exit: {
-      x: '-100vw',
-      transition: { ease: 'easeInOut' }
+        x: '-100vw',
+        transition: { ease: 'easeInOut' }
     }
 }
-
-
 
 const ProductDetail = () => {
     const { productId } = useParams();
     const dispatch = useDispatch();
     const loading = useSelector((state) => state.ui.productDetailLoading);
-    
+
     useEffect(() => {
         dispatch(getProductDetails(productId));
     }, [dispatch, productId]);
 
-    
-    
     const product = useSelector((state) => state.products.productDetails);
     const {
         id,
@@ -48,7 +43,7 @@ const ProductDetail = () => {
         brand,
         company,
         sku,
-        images
+        image,
     } = product;
 
     return (
@@ -59,36 +54,42 @@ const ProductDetail = () => {
             exit="exit"
         >
             <PageHero title={name} product />
-            <div className='mt-16 space-y-16 w-[80vw] mx-auto'>
+            <div className='mt-16 space-y-16 w-full px-4 md:px-8 lg:px-0 mx-auto max-w-screen-xl'>
                 <Link to='/products' className='uppercase bg-primary px-4 py-2 rounded text-white font-semibold shadow-lg'>
                     back to products
                 </Link>
                 {loading ? <TheSpinner /> :
-                <div className='grid grid-cols-1 lg:grid-cols-2 gap-16'>
-                    <ProductImages images={images} />
-                    <div>
-                        <h2 className='font-bold text-5xl tracking-wide mb-5'>{name}</h2>
-                        <Stars />
-                        <h4 className='text-xl font-extrabold text-secondary-100 tracking-widest italic my-4'>{formatPrice(price)}</h4>
-                        <p className='max-w-3xl tracking-wider leading-8 text-gray-500 mb-6'>{description}</p>
-                        <div className='flex flex-col w-full sm:w-3/4 lg:w-1/2 space-y-5'>
-                            <div className='flex justify-between'>
-                                <p className='text-lg font-semibold tracking-wider text-gray-600'>Available :</p>
-                                <p>In Stock</p>
-                            </div>
-                            <div className='flex justify-between'>
-                                <p className='text-lg font-semibold tracking-wider text-gray-600'>SKU :</p>
-                                <p>{sku}</p>
-                            </div>
-                            <div className='flex justify-between'>
-                                <p className='text-lg font-semibold tracking-wider text-gray-600'>Brand :</p>
-                                <p className='uppercase'>{brand}</p>
-                            </div>
+                    <div className='grid grid-cols-1 lg:grid-cols-2 gap-16'>
+                        <div className='mt-8 grid grid-cols-5 gap-x-4'>
+                            <img
+                                src={image}
+                                alt=""
+                                className="w-full lg:max-h-[1200px] rounded-lg mx-auto"
+                            />
                         </div>
-                        <hr className='my-6' />
-                        <AddToCart product={product} />
+                        <div>
+                            <h2 className='font-bold text-5xl tracking-wide mb-5'>{name}</h2>
+                            <Stars />
+                            <h4 className='text-xl font-extrabold text-secondary-100 tracking-widest italic my-4'>${price}</h4>
+                            <p className='max-w-3xl tracking-wider leading-8 text-gray-500 mb-6'>{description}</p>
+                            <div className='flex flex-col w-full sm:w-3/4 lg:w-1/2 space-y-5'>
+                                <div className='flex justify-between'>
+                                    <p className='text-lg font-semibold tracking-wider text-gray-600'>Available :</p>
+                                    <p>In Stock</p>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <p className='text-lg font-semibold tracking-wider text-gray-600'>SKU :</p>
+                                    <p>{sku}</p>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <p className='text-lg font-semibold tracking-wider text-gray-600'>Brand :</p>
+                                    <p className='uppercase'>{brand}</p>
+                                </div>
+                            </div>
+                            <hr className='my-6' />
+                            <AddToCart product={product} />
+                        </div>
                     </div>
-                </div>
                 }
             </div>
         </motion.div>

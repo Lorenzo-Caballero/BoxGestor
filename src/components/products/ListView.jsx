@@ -9,18 +9,18 @@ const ListView = ({ products }) => {
   return (
     <div>
       {products.map((product) => {
-        const { id, name, description, price, thumbnail } = product;
+        const { id, name, description, price, image } = product;
         return (
           <div key={id} className="flex mb-8">
             <img
               className="w-[300px] h-[200px] object-contain mb-4 rounded"
-              src={thumbnail}
+              src={image}
               alt={name}
             />
             <div className="flex flex-col">
               <h3 className="mb-2 text-lg font-bold tracking-widest">{name}</h3>
               <h4 className="mb-2 text-secondary-100 italic font-bold">
-                {formatPrice(price)}
+                {price}
               </h4>
               <p className="max-w-2xl mb-3 text-gray-500">
                 {description.substring(0, 150)}...

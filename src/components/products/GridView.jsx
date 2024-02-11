@@ -9,7 +9,7 @@ const GridView = ({ products }) => {
         <div>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-6'>
             {products.map((product) => {
-                const { id, name, price, thumbnail } = product;
+                const { id, name, price, image } = product;
                 return (
                     <div key={id}>
                         <div className='relative rounded-md'>
@@ -18,11 +18,11 @@ const GridView = ({ products }) => {
                                     <FaSearch />
                                 </span>
                             </Link>
-                            <img className='w-full h-[175px] block object-contain rounded' src={thumbnail} alt={name} />
+                            <img className='w-full h-[175px] block object-contain rounded' src={image} alt={name} />
                         </div>
                         <footer className='flex mt-4 justify-between items-center'>
                             <h4 className='mb-0 font-normal'>{name}</h4>
-                            <p className='mb-0 font-normal text-secondary-100 tracking-widest'>{formatPrice(price)}</p>
+                            <p className='mb-0 font-normal text-secondary-100 tracking-widest'>${price}</p>
                         </footer>
                     </div>
                 );

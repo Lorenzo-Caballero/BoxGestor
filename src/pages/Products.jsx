@@ -1,5 +1,4 @@
 import React from 'react';
-
 import PageHero from '../layout/PageHero';
 import Filters from '../components/products/Filters';
 import Sort from '../components/products/Sort'

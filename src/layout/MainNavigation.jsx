@@ -6,14 +6,28 @@ import { motion } from "framer-motion";
 import machinetattoo from '../assets/machine.png';
 import HambergurMenu from "../assets/HambergurMenu.svg";
 import NavCartButton from "../components/cart/NavCartButton";
-import {useAuth} from "../components/context/AuthContext";
+import { useAuth } from "../components/context/AuthContext";
+import ImageUploadModal from "../components/products/ImageUploadModal";
 const MainNavigation = () => {
   const [showNav, setShowNav] = useState(false);
   const { isAuthenticated, logout, user } = useAuth(); // Obtenemos los valores del contexto
   const [showDropdown, setShowDropdown] = useState(false); // Estado para controlar el dropdown
+  const [showDesignDropdown, setShowDesignDropdown] = useState(false); // Estado para controlar el dropdown de "Diseño"
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false); // Estado para controlar la apertura del modal de subida de imagen
+
+  const openImageModal = () => {
+    setIsImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setIsImageModalOpen(false);
+  };
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
+  };
+  const toggleDesignDropdown = () => {
+    setShowDesignDropdown(!showDesignDropdown);
   };
   const navHandler = () => {
     setShowNav(!showNav);
@@ -23,28 +37,7 @@ const MainNavigation = () => {
     logout(); // Llama a la función de logout del contexto
   };
 
-  const svgVariants = {
-    hidden: { rotate: -180 },
-    visible: {
-      rotate: 0,
-      transition: { duration: 1 },
-    },
-  };
 
-  const pathVariants = {
-    hidden: {
-      opacity: 0,
-      pathLength: 0,
-    },
-    visible: {
-      opacity: 1,
-      pathLength: 1,
-      transition: {
-        duration: 3,
-        ease: "easeInOut",
-      },
-    },
-  };
   const imageVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
@@ -141,7 +134,34 @@ const MainNavigation = () => {
               </motion.button>
             </NavLink>
           )}
-       {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+
+          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+            <div className="relative">
+              <button
+                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
+                onClick={toggleDesignDropdown}
+              >
+                Crear +
+              </button>
+              {showDesignDropdown && (
+                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+
+                  <button
+                    className="p-2 w-full text-left hover:bg-gray-200"
+                    onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
+                  >
+                    Diseño
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          <ImageUploadModal
+            isOpen={isImageModalOpen}
+            onClose={closeImageModal}
+          
+          />
+          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
             <div className="relative">
               <button
                 className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
@@ -216,7 +236,7 @@ const MainNavigation = () => {
         </li>
 
         <div className="flex flex-col items-center m-4 space-y-4">
-        
+
           {!isAuthenticated && (
             <NavLink
               onClick={navHandler}
@@ -225,6 +245,27 @@ const MainNavigation = () => {
             >
               Login
             </NavLink>
+          )}
+          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+            <div className="relative">
+              <button
+                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
+                onClick={toggleDesignDropdown}
+              >
+                +
+
+              </button>
+              {showDesignDropdown && (
+                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+
+                  <button
+                    className="p-2 w-full text-left hover:bg-gray-200"
+                  >
+                    Diseño
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
             <div className="relative">
