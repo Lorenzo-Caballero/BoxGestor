@@ -25,11 +25,11 @@ const FeaturedProducts = () => {
                                     <FaSearch />
                                 </span>
                             </Link>
-                            <img className='w-full h-[225px] block object-contain rounded' src={product.thumbnail} alt={product.name} />
+                            <img className='w-full h-[225px] block object-contain rounded' src={product.image} alt={product.name} />
                         </div>
                         <footer className='flex mt-4 justify-between items-center'>
                             <h4 className='mb-0 font-normal'>{product.name}</h4>
-                            <p className='mb-0 font-semibold italic text-secondary-100 tracking-widest'>{formatPrice(product.price)}</p>
+                            <p className='mb-0 font-semibold italic text-secondary-100 tracking-widest'>${product.price}</p>
                         </footer>
                     </div>
                 ))}
