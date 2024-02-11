@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-// import { Link } from 'react-router-dom';
+import video from "../../assets/MachinePen.mp4"
 import { motion } from 'framer-motion';
 
 const Hero = () => {
@@ -96,7 +96,7 @@ const Hero = () => {
               Diseños Detallados
               <br />
               Y Exclusivos
-             
+
             </motion.h1>
             <motion.p className="text-lg py-6"
               variants={textAnimate}
@@ -137,7 +137,10 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: .4 }}
           >
-            <img className="h-[75%]" alt="" />
+            <video className="hidden md:block h-[75%]" autoPlay loop muted>
+              <source src={video} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </motion.div>
         </div>
       </div>
