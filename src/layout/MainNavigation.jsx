@@ -86,7 +86,7 @@ const MainNavigation = () => {
               <NavLink to="/">
                 <h1 className="text-3xl font-bold ml-2 select-none">
                   <span className="text-primary">Fauno</span>
-                  <span className="text-secondary-200">Tattoo</span>
+                  <span className="text-purple-300">Tattoo</span>
                 </h1>
               </NavLink>
             </motion.div>
