@@ -113,14 +113,7 @@ const MainNavigation = () => {
                 Diseños
               </NavLink>
             </li>
-            <li>
-              <NavLink
-                className="ml-2 p-2 lg:text-lg font-semibold"
-                to="/games"
-              >
-                Juegos
-              </NavLink>
-            </li>
+        
           </ul>
         </div>
         <div className="hidden md:flex">
@@ -227,13 +220,7 @@ const MainNavigation = () => {
             Diseños
           </NavLink>
         </li>
-        <li className="border-b-2 border-zinc-300 w-full mt-4 text-lg font-semibold text-gray-600">
-          <NavLink
-            to="/games"
-          >
-            Juegos
-          </NavLink>
-        </li>
+      
 
         <div className="flex flex-col items-center m-4 space-y-4">
 

@@ -1,45 +1,42 @@
-import React, { useState, useRef } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { FiMessageSquare, FiX } from 'react-icons/fi'; // Importa el icono de cierre
 import { motion } from "framer-motion";
 
 const apiUrl = 'https://api.openai.com/v1/chat/completions';
-const railwayApiUrl = 'https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai';
 
 const ChatButton = () => {
   const [chatAbierto, setChatAbierto] = useState(false);
   const [mensajes, setMensajes] = useState([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [escribiendo, setEscribiendo] = useState(false);
-  const chatRef = useRef(null);
 
   const obtenerRespuestaFauno = async (userMessage) => {
     try {
-      const response = await axios.get("https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai");
-      const apikey = response.data[0].KEY_AI;
+      const response = await fetch("https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai");
+      const data = await response.json();
+      const apikey = data;
       console.log('API key obtenida:', apikey);
 
       setEscribiendo(true);
-      const respuesta = await axios.post(
-        apiUrl,
-        {
+      const respuesta = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apikey}`,
+        },
+        body: JSON.stringify({
           messages: [
             {"role": "system", "content": "Eres un asistente de Fauno, das respuestas breves las respuestas no deben superar los cuatro renglones, eres argentino , fauno es un tatuador profesional de Santa Clara del Mar. Como asistente virtual de Fauno, debes conocer que Fauno es un tatuador con más de cinco años de experiencia y se destaca en la realización de diseños exclusivos. Se inspira en la naturaleza, animales, insectos, flora y fauna. Debes responder con amabilidad preguntas referenciadas al mundo del tatuaje. Si están fuera del contexto del tatuaje o del arte, responde con un 'No conozco esos temas', si te piden el numero de telefono de fauno ,fauno tiene 26 años dales el siguiente link para que accedan :`https://wa.me/2233407440`, si te preguntan por paloma , es la novia y musa inspiradora de fauno , si te preguntan por el valor minimo de un tattoo , es de 10 mil pesos argentinos el valor minimo . Además, ten en cuenta que tienes un límite de respuesta de 70 tokens, evita superarlo."},
             {"role": "user", "content": userMessage} 
           ],
-          model: "text-embedding-3-small",
+          model: "gpt-3.5-turbo",
           max_tokens: 90,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apikey}`,
-          },
-        }
-      );
+        }),
+      });
+      const dataRespuesta = await respuesta.json();
 
       setEscribiendo(false);
-      return respuesta.data.choices[0].message.content;
+      return dataRespuesta.choices[0].message.content;
     } catch (error) {
       if (error.response && error.response.status === 429) {
         // Si recibimos un error 429, esperamos 5 segundos y luego reintentamos la solicitud
@@ -55,10 +52,16 @@ const ChatButton = () => {
 
   const handleEnviarMensaje = async () => {
     if (!nuevoMensaje.trim()) return;
-    setMensajes((prevMensajes) => [...prevMensajes, { texto: nuevoMensaje, origen: 'usuario' }]);
+    setMensajes(prevMensajes => [
+      ...prevMensajes,
+      { texto: nuevoMensaje, origen: 'usuario' }
+    ]);
     setNuevoMensaje('');
     const respuestaFauno = await obtenerRespuestaFauno(nuevoMensaje);
-    setMensajes((prevMensajes) => [...prevMensajes, { texto: respuestaFauno, origen: 'fauno' }]);
+    setMensajes(prevMensajes => [
+      ...prevMensajes,
+      { texto: respuestaFauno, origen: 'fauno' }
+    ]);
   };
 
   const handleKeyPress = (e) => {
