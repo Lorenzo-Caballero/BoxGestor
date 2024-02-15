@@ -260,6 +260,8 @@ const MainNavigation = () => {
 
                   <button
                     className="p-2 w-full text-left hover:bg-gray-200"
+                    onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
+
                   >
                     Diseño
                   </button>
@@ -269,7 +271,7 @@ const MainNavigation = () => {
           )}
 
           {isAuthenticated && (
-            <div className="flex flex-col items-center">
+            <div className="flex  justify-between items-center">
               <div className="relative">
                 <button
                   className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center mb-2"
@@ -281,6 +283,8 @@ const MainNavigation = () => {
                   <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
                     <button
                       className="p-2 w-full text-left hover:bg-gray-200"
+                      onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
+
                     >
                       Diseño
                     </button>
