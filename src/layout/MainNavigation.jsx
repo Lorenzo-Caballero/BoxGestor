@@ -10,7 +10,7 @@ import { useAuth } from "../components/context/AuthContext";
 import ImageUploadModal from "../components/products/ImageUploadModal";
 const MainNavigation = () => {
   const [showNav, setShowNav] = useState(false);
-  const { isAuthenticated, logout, user } = useAuth(); // Obtenemos los valores del contexto
+  const { isAuthenticated, logout, user ,isAdmin} = useAuth(); // Obtenemos los valores del contexto
   const [showDropdown, setShowDropdown] = useState(false); // Estado para controlar el dropdown
   const [showDesignDropdown, setShowDesignDropdown] = useState(false); // Estado para controlar el dropdown de "Diseño"
   const [isImageModalOpen, setIsImageModalOpen] = useState(false); // Estado para controlar la apertura del modal de subida de imagen
@@ -113,7 +113,7 @@ const MainNavigation = () => {
                 Diseños
               </NavLink>
             </li>
-        
+
           </ul>
         </div>
         <div className="hidden md:flex">
@@ -128,7 +128,7 @@ const MainNavigation = () => {
             </NavLink>
           )}
 
-          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+{isAuthenticated && isAdmin && ( // Verifica si el usuario está autenticado y es administrador
             <div className="relative">
               <button
                 className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
@@ -138,7 +138,6 @@ const MainNavigation = () => {
               </button>
               {showDesignDropdown && (
                 <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
-
                   <button
                     className="p-2 w-full text-left hover:bg-gray-200"
                     onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
@@ -149,6 +148,7 @@ const MainNavigation = () => {
               )}
             </div>
           )}
+
           <ImageUploadModal
             isOpen={isImageModalOpen}
             onClose={closeImageModal}
@@ -220,7 +220,7 @@ const MainNavigation = () => {
             Diseños
           </NavLink>
         </li>
-      
+
 
         <div className="flex flex-col items-center m-4 space-y-4">
 
@@ -233,22 +233,19 @@ const MainNavigation = () => {
               Login
             </NavLink>
           )}
-          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+          {isAuthenticated && isAdmin && ( // Verifica si el usuario está autenticado y es administrador
             <div className="relative">
               <button
                 className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
                 onClick={toggleDesignDropdown}
               >
-                +
-
+                Crear +
               </button>
               {showDesignDropdown && (
                 <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
-
                   <button
                     className="p-2 w-full text-left hover:bg-gray-200"
                     onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
-
                   >
                     Diseño
                   </button>
@@ -257,59 +254,39 @@ const MainNavigation = () => {
             </div>
           )}
 
-          {isAuthenticated && (
-            <div className="flex  justify-between items-center">
-              <div className="relative">
-                <button
-                  className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center mb-2"
-                  onClick={toggleDesignDropdown}
-                >
-                  +
-                </button>
-                {showDesignDropdown && (
-                  <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
-                    <button
-                      className="p-2 w-full text-left hover:bg-gray-200"
-                      onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
 
-                    >
-                      Diseño
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <button
-                  className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center"
-                  onClick={toggleDropdown}
+          {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
+            <div className="relative">
+              <button
+                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
+                onClick={toggleDropdown}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-gray-700"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 text-gray-700"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
+              </button>
+              {showDropdown && (
+                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+                  <p className="p-2">{user}</p>
+                  <button
+                    onClick={logoutUser}
+                    className="p-2 w-full text-left hover:bg-gray-200"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
-                </button>
-                {showDropdown && (
-                  <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
-                    <p className="p-2">{user}</p>
-                    <button
-                      onClick={logoutUser}
-                      className="p-2 w-full text-left hover:bg-gray-200"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

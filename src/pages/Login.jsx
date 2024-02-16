@@ -24,7 +24,7 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false); // Estado local para manejar la carga
   const navigate = useNavigate();
-  
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -46,9 +46,11 @@ const Login = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        console.log(data);
-        login(data.email); // Utilizamos la función de login del contexto
-
+        localStorage.setItem('user',data.email); 
+        localStorage.setItem('admin',data.role); 
+        localStorage.setItem("isAuthenticated", data.email ? true : false)
+        console.log("data",data);
+        login(data.email,data.role); // Utilizamos la función de login del contexto
         navigate('/');
       } else {
         console.error('Error en la solicitud:', response.status);

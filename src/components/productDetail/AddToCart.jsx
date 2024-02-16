@@ -55,7 +55,7 @@ const AddToCart = ({ product }) => {
                     <FaPlus />
                 </button>
             </div>
-            <Link to='/cart' className='w-[140px] uppercase text-primary bg-secondary-100 rounded-md px-4 py-3 shadow-md flex justify-center items-center' onClick={addItemsToCart}>
+            <Link to='/cart' className='w-[140px] uppercase text-white bg-purple-500 rounded-md px-4 py-3 shadow-md flex justify-center items-center' onClick={addItemsToCart}>
                 add to cart
             </Link>
         </div>

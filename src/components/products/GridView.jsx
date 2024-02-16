@@ -14,7 +14,7 @@ const GridView = ({ products }) => {
                     <div key={id}>
                         <div className='relative rounded-md'>
                             <Link to={`/products/${id}`} className='flex items-center justify-center absolute bg-[#222] w-full h-[175px] rounded-md opacity-0 hover:opacity-70 transition-all duration-300'>
-                                <span className='flex items-center justify-center bg-secondary-100 w-10 h-10 rounded-full'>
+                                <span className='flex items-center justify-center bg-purple-300 w-10 h-10 rounded-full'>
                                     <FaSearch />
                                 </span>
                             </Link>
@@ -22,7 +22,7 @@ const GridView = ({ products }) => {
                         </div>
                         <footer className='flex mt-4 justify-between items-center'>
                             <h4 className='mb-0 font-normal'>{name}</h4>
-                            <p className='mb-0 font-normal text-secondary-100 tracking-widest'>${price}</p>
+                            <p className='mb-0 font-normal text-purple-500 tracking-widest'>${price}</p>
                         </footer>
                     </div>
                 );

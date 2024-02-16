@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 
 const initialState = {
-    gridView: true,
+    gridView: false,
     productDetailLoading: false,
     productsLoading: false,
     loginLoading: false,
