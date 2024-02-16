@@ -33,6 +33,7 @@ const ImageUploadModal = ({ isOpen, onClose }) => {
       }));
     };
   };
+  
   const shortenImageUrl = async (imageUrl) => {
     try {
       const response = await axios.get(`https://api.tinyurl.com/dev/api-create.php?url=${imageUrl}`);
@@ -75,11 +76,11 @@ const ImageUploadModal = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className={`fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50 ${
+      className={`fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-900 bg-opacity-75 z-50 ${
         isOpen ? "" : "hidden"
       }`}
     >
-      <div className="bg-white p-8 rounded-lg shadow-lg">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-11/12 max-w-md">
         <h2 className="text-xl font-bold mb-4">Subir imagen</h2>
         <div className="mb-4">
           <input
