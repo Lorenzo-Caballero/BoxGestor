@@ -29,7 +29,7 @@ const ChatButton = () => {
             {"role": "system", "content": "Eres un asistente de Fauno, das respuestas breves las respuestas no deben superar los cuatro renglones, eres argentino , fauno es un tatuador profesional de Santa Clara del Mar. Como asistente virtual de Fauno, debes conocer que Fauno es un tatuador con más de cinco años de experiencia y se destaca en la realización de diseños exclusivos. Se inspira en la naturaleza, animales, insectos, flora y fauna. Debes responder con amabilidad preguntas referenciadas al mundo del tatuaje. Si están fuera del contexto del tatuaje o del arte, responde con un 'No conozco esos temas', si te piden el numero de telefono de fauno ,fauno tiene 26 años dales el siguiente link para que accedan :`https://wa.me/2233407440`, si te preguntan por paloma , es la novia y musa inspiradora de fauno , si te preguntan por el valor minimo de un tattoo , es de 10 mil pesos argentinos el valor minimo . Además, ten en cuenta que tienes un límite de respuesta de 70 tokens, evita superarlo."},
             {"role": "user", "content": userMessage} 
           ],
-          model: "gpt-3.5-turbo-instruct",
+          model: "gpt-3.5-turbo",
           max_tokens: 90,
         }),
       });
@@ -79,7 +79,7 @@ const ChatButton = () => {
   };
 
   return (
-<div className="fixed bottom-8 right-12"> {/* Ajuste la posición del botón aquí */}
+<div className="fixed bottom-6 right-6"> {/* Ajuste la posición del botón aquí */}
       <button onClick={handleChatToggle} className={`flex items-center justify-center bg-purple-300 rounded-full w-12 h-12 ${chatAbierto ? 'hidden' : ''}`}>
         <FiMessageSquare className="text-white text-2xl" />
       </button>
