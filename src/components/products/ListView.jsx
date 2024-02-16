@@ -15,7 +15,7 @@ const ListView = ({ products }) => {
               src={image}
               alt={name}
             />
-            <div className="flex flex-col">
+            <div className="flex flex-col flex-grow ml-4"> {/* Agregamos flex-grow para que este div crezca y ocupe el espacio restante */}
               <h3 className="mb-2 text-lg font-bold tracking-widest">{name}</h3>
               <h4 className="mb-2 text-purple-400 italic font-bold">
                 {formatPrice(price)}
@@ -25,13 +25,15 @@ const ListView = ({ products }) => {
                   {description.substring(0, 150)}...
                 </p>
               )}
-              <Link
-                to={`/products/${id}`}
-                className="text-sm uppercase bg-purple-500 text-white rounded-md font-bold py-1 px-2 ml-auto shadow-lg"
-              >
-                Detalles
-                <span className="inline-block ml-1"><HiChevronDoubleRight /></span>
-              </Link>
+              <div className="flex items-center"> {/* Contenedor para alinear el botón y el texto */}
+                <Link
+                  to={`/products/${id}`}
+                  className="text-sm uppercase bg-purple-500 text-white rounded-md font-bold py-1 px-2 shadow-lg"
+                >
+                  Detalles
+                  <span className="inline-block ml-1"><HiChevronDoubleRight /></span>
+                </Link>
+              </div>
             </div>
           </div>
         );
