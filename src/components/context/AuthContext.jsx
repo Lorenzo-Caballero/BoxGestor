@@ -5,7 +5,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para verificar si el usuario es administrador
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -16,34 +16,41 @@ export const AuthProvider = ({ children }) => {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       setIsAuthenticated(JSON.parse(storedIsAuthenticated));
-      setIsAdmin(parsedUser && storedAdmin === 'admin'); // Verificar si el usuario es administrador
+      if (storedAdmin === 'true') { // Almacenar un valor booleano en lugar de una cadena
+        setIsAdmin(true);
+      }
     }
   }, []);
 
-  const login = (userData,userRole) => {
+  const login = (userData, userRole) => {
     setUser(userData);
     setIsAuthenticated(true);
-    setIsAdmin(userData && userRole === 'admin'); // Verificar si el usuario es administrador al iniciar sesión
+    if (userRole === 'admin') {
+      setIsAdmin(true);
+      localStorage.setItem('admin', true); // Almacenar un valor booleano en localStorage
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('admin'); // Eliminar el estado de isAdmin al cerrar sesión
     setUser(null);
     setIsAuthenticated(false);
-    setIsAdmin(false); // Cuando el usuario cierra sesión, no es administrador
+    setIsAdmin(false);
   };
 
   useEffect(() => {
     if (isAuthenticated) {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isAuthenticated', JSON.stringify(true));
+      localStorage.setItem('admin', JSON.stringify(isAdmin)); // Almacenar el estado de isAdmin
     } else {
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
-      setIsAdmin(false); // Si no está autenticado, no es administrador
+      localStorage.removeItem('admin');
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isAdmin]);
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated, isAdmin, login, logout }}>
@@ -51,5 +58,6 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
 
 export const useAuth = () => useContext(AuthContext);

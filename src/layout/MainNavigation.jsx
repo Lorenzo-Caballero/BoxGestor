@@ -34,9 +34,10 @@ const MainNavigation = () => {
   };
 
   const logoutUser = async () => {
-    logout(); // Llama a la función de logout del contexto
+    logout();
+    localStorage.removeItem('admin'); // Elimina el estado de administrador al cerrar sesión
   };
-
+  
 
   const imageVariants = {
     hidden: { opacity: 0 },
@@ -128,26 +129,27 @@ const MainNavigation = () => {
             </NavLink>
           )}
 
-{isAuthenticated && isAdmin && ( // Verifica si el usuario está autenticado y es administrador
-            <div className="relative">
-              <button
-                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
-                onClick={toggleDesignDropdown}
-              >
-                Crear +
-              </button>
-              {showDesignDropdown && (
-                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
-                  <button
-                    className="p-2 w-full text-left hover:bg-gray-200"
-                    onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
-                  >
-                    Diseño
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+{isAuthenticated && isAdmin && (
+  <div className="relative">
+    <button
+      className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
+      onClick={toggleDesignDropdown}
+    >
+      Crear +
+    </button>
+    {showDesignDropdown && (
+      <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+        <button
+          className="p-2 w-full text-left hover:bg-gray-200"
+          onClick={openImageModal}
+        >
+          Diseño
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
 
           <ImageUploadModal
             isOpen={isImageModalOpen}
@@ -233,26 +235,26 @@ const MainNavigation = () => {
               Login
             </NavLink>
           )}
-          {isAuthenticated && isAdmin && ( // Verifica si el usuario está autenticado y es administrador
-            <div className="relative">
-              <button
-                className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
-                onClick={toggleDesignDropdown}
-              >
-                Crear +
-              </button>
-              {showDesignDropdown && (
-                <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
-                  <button
-                    className="p-2 w-full text-left hover:bg-gray-200"
-                    onClick={openImageModal} // Abre el modal al hacer clic en "Diseño"
-                  >
-                    Diseño
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+        {isAuthenticated && isAdmin && (
+  <div className="relative">
+    <button
+      className="rounded-full w-10 h-10 bg-gray-200 flex items-center justify-center ml-2"
+      onClick={toggleDesignDropdown}
+    >
+      Crear +
+    </button>
+    {showDesignDropdown && (
+      <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg mt-2">
+        <button
+          className="p-2 w-full text-left hover:bg-gray-200"
+          onClick={openImageModal}
+        >
+          Diseño
+        </button>
+      </div>
+    )}
+  </div>
+)}
 
 
           {isAuthenticated && ( // Mostrar el botón de usuario redondo solo si está autenticado
