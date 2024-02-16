@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/react-template/static/css/main.e6bb9a84.css",
-    "main.js": "/react-template/static/js/main.1c42d708.js",
+    "main.css": "/react-template/static/css/main.bd85ea36.css",
+    "main.js": "/react-template/static/js/main.108d5cc1.js",
     "static/media/MachinePen.mp4": "/react-template/static/media/MachinePen.c81be992caf649d92658.mp4",
     "static/media/machine.png": "/react-template/static/media/machine.241758e4b191cd0c68f6.png",
     "index.html": "/react-template/index.html",
     "static/media/HambergurMenu.svg": "/react-template/static/media/HambergurMenu.9955f00c01a0988ffe2fb16386e78554.svg",
-    "main.e6bb9a84.css.map": "/react-template/static/css/main.e6bb9a84.css.map",
-    "main.1c42d708.js.map": "/react-template/static/js/main.1c42d708.js.map"
+    "main.bd85ea36.css.map": "/react-template/static/css/main.bd85ea36.css.map",
+    "main.108d5cc1.js.map": "/react-template/static/js/main.108d5cc1.js.map"
   },
   "entrypoints": [
-    "static/css/main.e6bb9a84.css",
-    "static/js/main.1c42d708.js"
+    "static/css/main.bd85ea36.css",
+    "static/js/main.108d5cc1.js"
   ]
 }
