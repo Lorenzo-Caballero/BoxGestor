@@ -9,7 +9,7 @@ export const getProducts = () => {
     return async dispatch => {
         dispatch(uiActions.productsLoading());
         const fetchData = async () => {
-            const response = await axios.get('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/designs');
+            const response = await axios.get('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/amigurumis');
 
             const data = await response.data;
             return data;

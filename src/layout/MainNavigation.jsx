@@ -3,7 +3,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { XIcon } from "@heroicons/react/solid";
 import { motion } from "framer-motion";
-import machinetattoo from '../assets/machine.png';
+import conejita from '../assets/coneji-removebg-preview.png';
 import HambergurMenu from "../assets/HambergurMenu.svg";
 import NavCartButton from "../components/cart/NavCartButton";
 import { useAuth } from "../components/context/AuthContext";
@@ -69,7 +69,7 @@ const MainNavigation = () => {
               {/* <NavLink to='/'><img src={Logo} alt="" /></NavLink> */}
               <NavLink to="/">
                 <motion.img
-                  src={machinetattoo}
+                  src={conejita}
                   alt="Machine Tattoo"
                   height="50"
                   width="50"
@@ -86,8 +86,8 @@ const MainNavigation = () => {
             >
               <NavLink to="/">
                 <h1 className="text-3xl font-bold ml-2 select-none">
-                  <span className="text-primary">Fauno</span>
-                  <span className="text-purple-300">Tattoo</span>
+                  <span className="text-primary">Lennita</span>
+                  <span className="text-purple-300">BB</span>
                 </h1>
               </NavLink>
             </motion.div>
