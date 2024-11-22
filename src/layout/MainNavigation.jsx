@@ -69,7 +69,7 @@ const MainNavigation = () => {
               {/* <NavLink to='/'><img src={Logo} alt="" /></NavLink> */}
               <NavLink to="/">
                 <motion.img
-                  src={conejita}
+                  src={""}
                   alt="Machine Tattoo"
                   height="50"
                   width="50"
@@ -86,8 +86,8 @@ const MainNavigation = () => {
             >
               <NavLink to="/">
                 <h1 className="text-3xl font-bold ml-2 select-none">
-                  <span className="text-primary">Lennita</span>
-                  <span className="text-purple-300">BB</span>
+                  <span className="text-primary">Fauno</span>
+                  <span className="text-purple-300">Tattoo</span>
                 </h1>
               </NavLink>
             </motion.div>

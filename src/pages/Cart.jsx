@@ -6,25 +6,23 @@ import PageHero from '../layout/PageHero';
 import CartContent from '../components/cart/CartContent';
 import CartEmpty from '../components/cart/CartEmpty';
 
-
 const containerVariants = {
     hidden: {
-      opacity: 0
+        opacity: 0
     },
     visible: {
-      opacity: 1,
-      transition: { duration: .3 }
+        opacity: 1,
+        transition: { duration: .3 }
     },
     exit: {
-      x: '-100vw',
-      transition: { ease: 'easeInOut' }
+        x: '-100vw',
+        transition: { ease: 'easeInOut' }
     }
 };
 
-
 const Cart = () => {
-    const cart = useSelector((state) => state.cart.items);
-    const totalPrice = useSelector((state) => state.cart.totalPrice);
+    // Seleccionar items y totalPrice desde el estado global de Redux
+    const { items: cart, totalPrice } = useSelector((state) => state.cart);
 
     return (
         <motion.div
@@ -33,10 +31,13 @@ const Cart = () => {
             animate="visible"
             exit="exit"
         >
-            <PageHero title='cart' />
-            <div className='w-[90%] mx-auto'>
-                {cart.length < 1 && <CartEmpty />}
-                {cart.length > 0 && <CartContent cart={cart} totalPrice={totalPrice} />}
+            <PageHero title="Cart" />
+            <div className="w-[90%] mx-auto">
+                {cart.length === 0 ? (
+                    <CartEmpty />
+                ) : (
+                    <CartContent cart={cart} totalPrice={totalPrice} />
+                )}
             </div>
         </motion.div>
     );

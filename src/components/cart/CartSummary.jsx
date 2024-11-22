@@ -9,18 +9,15 @@ const CartSummary = ({ totalPrice }) => {
 
     return (
         <div className='flex flex-col border-2 border-solid border-gray-700 rounded-xl text-center p-5'>
-            <h2 className='uppercase text-2xl tracking-wide'>order summary</h2>
+            <h2 className='uppercase text-2xl tracking-wide'>Orden de Compra</h2>
             <div className='my-4 flex justify-between'>
                 <span className='capitalize text-lg'>subtotal</span>
                 <span className='italic'>{formatPrice(totalPrice)}</span>
             </div>
+        
             <div className='my-4 flex justify-between'>
-                <span className='capitalize text-lg'>estimated shipping</span>
-                <span className='italic'>{formatPrice(5.99)}</span>
-            </div>
-            <div className='my-4 flex justify-between'>
-                <span className='capitalize text-lg'>shipping discount</span>
-                <span className='italic'>{formatPrice(-5.99)}</span>
+                <span className='capitalize text-lg'>Descuentos aplicados</span>
+                <span className='italic'>{formatPrice(-0.00)}</span>
             </div>
             <div className='my-4 flex justify-between'>
                 <span className='capitalize text-xl font-bold'>total</span>
