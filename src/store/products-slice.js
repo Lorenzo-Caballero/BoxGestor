@@ -3,56 +3,56 @@ import { createSlice } from '@reduxjs/toolkit';
 const sampleProducts = [
     {
         id: 1,
-        name: 'Amigurumi Oso',
+        name: 'Tattoo Oso',
         price: 25.00,
         description: 'Un adorable oso tejido a mano.',
         imageUrl: 'https://example.com/images/oso.png'
     },
     {
         id: 2,
-        name: 'Amigurumi Gato',
+        name: 'Tattoo Gato',
         price: 30.00,
         description: 'Un pequeño gato de lana con ojos grandes.',
         imageUrl: 'https://example.com/images/gato.png'
     },
     {
         id: 3,
-        name: 'Amigurumi Conejo',
+        name: 'Tattoo Conejo',
         price: 20.00,
         description: 'Este conejito es perfecto para abrazar.',
         imageUrl: 'https://example.com/images/conejo.png'
     },
     {
         id: 4,
-        name: 'Amigurumi Perro',
+        name: 'Tattoo Perro',
         price: 28.00,
         description: 'Un fiel compañero tejido a mano.',
         imageUrl: 'https://example.com/images/perro.png'
     },
     {
         id: 5,
-        name: 'Amigurumi Unicornio',
+        name: 'Tattoo Unicornio',
         price: 35.00,
         description: 'Un unicornio mágico lleno de colores.',
         imageUrl: 'https://example.com/images/unicornio.png'
     },
     {
         id: 6,
-        name: 'Amigurumi Dinosaurio',
+        name: 'Tattoo Dinosaurio',
         price: 32.00,
         description: 'Un feroz dinosaurio suave y esponjoso.',
         imageUrl: 'https://example.com/images/dinosaurio.png'
     },
     {
         id: 7,
-        name: 'Amigurumi Elefante',
+        name: 'Tattoo Elefante',
         price: 27.00,
         description: 'Un pequeño elefante con una trompa larga.',
         imageUrl: 'https://example.com/images/elefante.png'
     },
     {
         id: 8,
-        name: 'Amigurumi León',
+        name: 'Tattoo León',
         price: 30.00,
         description: 'El rey de la selva en formato mini.',
         imageUrl: 'https://example.com/images/leon.png'

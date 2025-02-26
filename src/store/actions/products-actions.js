@@ -5,56 +5,56 @@ import { uiActions } from '../ui-slice';
 const sampleProducts = [
     {
         id: 1,
-        name: 'Amigurumi Oso',
+        name: 'Tattoo Oso',
         price: 25.00,
         description: 'Un adorable oso tejido a mano.',
         imageUrl: 'https://example.com/images/oso.png'
     },
     {
         id: 2,
-        name: 'Amigurumi Gato',
+        name: 'Tattoo Gato',
         price: 30.00,
         description: 'Un pequeño gato de lana con ojos grandes.',
         imageUrl: 'https://example.com/images/gato.png'
     },
     {
         id: 3,
-        name: 'Amigurumi Conejo',
+        name: 'Tattoo Conejo',
         price: 20.00,
         description: 'Este conejito es perfecto para abrazar.',
         imageUrl: 'https://example.com/images/conejo.png'
     },
     {
         id: 4,
-        name: 'Amigurumi Perro',
+        name: 'Tattoo Perro',
         price: 28.00,
         description: 'Un fiel compañero tejido a mano.',
         imageUrl: 'https://example.com/images/perro.png'
     },
     {
         id: 5,
-        name: 'Amigurumi Unicornio',
+        name: 'Tattoo Unicornio',
         price: 35.00,
         description: 'Un unicornio mágico lleno de colores.',
-        imageUrl: 'https://example.com/images/unicornio.png'
+        imageUrl: 'https://i.pinimg.com/474x/d7/b2/02/d7b202c2f1e00d9702cd72dff19fce8b.jpg'
     },
     {
         id: 6,
-        name: 'Amigurumi Dinosaurio',
+        name: 'Tattoo Dinosaurio',
         price: 32.00,
         description: 'Un feroz dinosaurio suave y esponjoso.',
-        imageUrl: 'https://example.com/images/dinosaurio.png'
+        imageUrl: 'https://i.pinimg.com/474x/7e/4a/e0/7e4ae0594029b7fd5fca0c55d77d213e.jpg'
     },
     {
         id: 7,
-        name: 'Amigurumi Elefante',
+        name: 'Tattoo Elefante',
         price: 27.00,
         description: 'Un pequeño elefante con una trompa larga.',
-        imageUrl: 'https://example.com/images/elefante.png'
+        imageUrl: 'https://i.pinimg.com/474x/f3/60/72/f36072719bb1d0affbca8ad2597ed678.jpg'
     },
     {
         id: 8,
-        name: 'Amigurumi León',
+        name: 'Tattoo León',
         price: 30.00,
         description: 'El rey de la selva en formato mini.',
         imageUrl: 'https://example.com/images/leon.png'
@@ -67,10 +67,16 @@ export const getProducts = () => {
         dispatch(uiActions.productsLoading());
 
         // En vez de llamar a la API, usamos los productos simulados
-        const fetchData = async () => {
-            // Simulamos la respuesta de una API devolviendo el arreglo de productos
-            return sampleProducts;
-        };
+     
+        const response = await axios.post(
+            "restapi-lennitabb-production.up.railway.app/api/designs",
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          )
 
         try {
             const products = await fetchData();
