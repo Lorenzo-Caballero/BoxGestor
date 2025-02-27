@@ -167,14 +167,15 @@ const obtenerRespuestaCohere = async (userMessage) => {
             )}
           </div>
           <div className="flex justify-between">
-            <input
-              type="text"
-              value={nuevoMensaje}
-              onChange={(e) => setNuevoMensaje(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Escribí algo acá"
-              className="flex-1 border rounded-full px-4 py-2 outline-none"
-              disabled={enviandoMensaje} // Deshabilita el input mientras se está enviando un mensaje
+   <input
+  type="text"
+  value={nuevoMensaje}
+  onChange={(e) => setNuevoMensaje(e.target.value)}
+  onKeyPress={handleKeyPress}
+  placeholder="Escribí algo acá"
+  className="flex-1 border rounded-full px-4 py-2 outline-none"
+  disabled={enviandoMensaje} // Deshabilita el input mientras se está enviando un mensaje
+/>
             />
             <button onClick={handleEnviarMensaje} disabled={enviandoMensaje} className="ml-2 bg-purple-300 rounded-full px-4 py-2 text-white font-semibold">Enviar</button>
           </div>

@@ -55,9 +55,16 @@ const AddToCart = ({ product }) => {
                     <FaPlus />
                 </button>
             </div>
-            <Link to='/cart' className='w-[140px] uppercase text-white bg-purple-500 rounded-md px-4 py-3 shadow-md flex justify-center items-center' onClick={addItemsToCart}>
+            <button
+                type="button"
+                className="w-[140px] uppercase text-white bg-purple-500 rounded-md px-4 py-3 shadow-md flex justify-center items-center"
+                onClick={() => {
+                    addItemsToCart();
+                    window.location.href = '/cart';
+                }}>
                 add to cart
-            </Link>
+            </button>
+
         </div>
     );
 };

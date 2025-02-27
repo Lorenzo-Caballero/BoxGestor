@@ -78,7 +78,7 @@ const ImageUploadModal = ({ isOpen, onClose }) => {
       formData.append("image", values.image);
 
       const response = await axios.post(
-        "https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/amigurumis",
+        "https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/Tattoos",
         formData,
         {
           headers: {
@@ -94,7 +94,7 @@ console.log("hola",response)
         console.error("Error al subir el diseño:", response.statusText);
       }
     } catch (response) {
-      console.error("Error al subir el amigurumi:", response);
+      console.error("Error al subir el Tattoo:", response);
     }
   };
 

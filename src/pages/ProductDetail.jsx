@@ -33,13 +33,19 @@ const ProductDetail = () => {
         dispatch(getProductDetails(productId));
     }, [dispatch, productId]);
 
+    // Obtenemos el producto del estado
     const product = useSelector((state) => state.products.productDetails);
+
+    // Si el producto aún no está definido, mostramos un mensaje o un spinner
+    if (!product) {
+        return <TheSpinner />;
+    }
+
+    // Desestructuramos solo después de verificar que `product` no sea `undefined`
     const {
         name,
         description,
         price,
-        brand,
-        sku,
         image,
     } = product;
 
@@ -60,7 +66,7 @@ const ProductDetail = () => {
                         <div className='w-1/2 pr-8'>
                             <img
                                 src={image}
-                                alt=""
+                                alt={name}
                                 className="w-full rounded-lg md:max-w-md lg:max-w-lg"
                             />
                         </div>
@@ -74,7 +80,7 @@ const ProductDetail = () => {
                                     <p className='text-lg font-semibold tracking-wider text-gray-600'>Disponible :</p>
                                     <p>En stock</p>
                                 </div>
-                                </div>
+                            </div>
                             <hr className='my-6' />
                             <AddToCart product={product} />
                         </div>
