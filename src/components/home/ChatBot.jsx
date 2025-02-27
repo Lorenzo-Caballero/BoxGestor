@@ -12,7 +12,7 @@ const ChatButton = () => {
 
   const obtenerRespuestaFauno = async (userMessage) => {
     try {
-      const response = await fetch("https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/ai");
+      const response = await fetch("https://restapi-lennitabb-production.up.railway.app/api/ai");
       const data = await response.json();
       const apikey = data;
       console.log('API key obtenida:', apikey);
