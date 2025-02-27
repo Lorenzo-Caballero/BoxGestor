@@ -1,92 +1,35 @@
 import { productsActions } from '../products-slice';
 import { uiActions } from '../ui-slice';
+import axios from 'axios';
 
-// Arreglo de productos simulados para pruebas
-const sampleProducts = [
-    {
-        id: 1,
-        name: 'Tattoo Oso',
-        price: 25.00,
-        description: 'Un adorable oso tejido a mano.',
-        imageUrl: 'https://example.com/images/oso.png'
-    },
-    {
-        id: 2,
-        name: 'Tattoo Gato',
-        price: 30.00,
-        description: 'Un pequeño gato de lana con ojos grandes.',
-        imageUrl: 'https://example.com/images/gato.png'
-    },
-    {
-        id: 3,
-        name: 'Tattoo Conejo',
-        price: 20.00,
-        description: 'Este conejito es perfecto para abrazar.',
-        imageUrl: 'https://example.com/images/conejo.png'
-    },
-    {
-        id: 4,
-        name: 'Tattoo Perro',
-        price: 28.00,
-        description: 'Un fiel compañero tejido a mano.',
-        imageUrl: 'https://example.com/images/perro.png'
-    },
-    {
-        id: 5,
-        name: 'Tattoo Unicornio',
-        price: 35.00,
-        description: 'Un unicornio mágico lleno de colores.',
-        imageUrl: 'https://i.pinimg.com/474x/d7/b2/02/d7b202c2f1e00d9702cd72dff19fce8b.jpg'
-    },
-    {
-        id: 6,
-        name: 'Tattoo Dinosaurio',
-        price: 32.00,
-        description: 'Un feroz dinosaurio suave y esponjoso.',
-        imageUrl: 'https://i.pinimg.com/474x/7e/4a/e0/7e4ae0594029b7fd5fca0c55d77d213e.jpg'
-    },
-    {
-        id: 7,
-        name: 'Tattoo Elefante',
-        price: 27.00,
-        description: 'Un pequeño elefante con una trompa larga.',
-        imageUrl: 'https://i.pinimg.com/474x/f3/60/72/f36072719bb1d0affbca8ad2597ed678.jpg'
-    },
-    {
-        id: 8,
-        name: 'Tattoo León',
-        price: 30.00,
-        description: 'El rey de la selva en formato mini.',
-        imageUrl: 'https://example.com/images/leon.png'
-    }
-];
+// URL de la API
+const API_URL = 'https://restapi-lennitabb-production.up.railway.app/api/designs';
 
-// Obtener productos (usando los productos simulados)
+// Función para obtener los productos desde la API
 export const getProducts = () => {
-    return async dispatch => {
-        dispatch(uiActions.productsLoading());
-
-        // En vez de llamar a la API, usamos los productos simulados
-     
-        const response = await axios.post(
-            "restapi-lennitabb-production.up.railway.app/api/designs",
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          )
-
+    return async (dispatch) => {
         try {
-            const products = await fetchData();
-            
-            // Aquí reemplazamos los productos del estado con los productos simulados
-            dispatch(productsActions.replaceProducts(products));
+            // Dispatch de la acción para indicar que estamos cargando productos
             dispatch(uiActions.productsLoading());
-            
+
+            // Realizamos la petición a la API
+            const response = await axios.get(API_URL);
+
+            if (response.status === 200) {
+                // En caso de éxito, despachamos los productos al estado global
+                const products = response.data;  // Suponemos que la API devuelve los productos directamente
+                dispatch(productsActions.replaceProducts(products));
+            } else {
+                // Si la respuesta no es 200, lanzamos un error
+                throw new Error('Error fetching products from API');
+            }
         } catch (error) {
-            console.log('failed to fetch products');
+            // Manejamos errores con un mensaje adecuado
+            console.error('Error fetching products:', error);
+            dispatch(uiActions.setError('Failed to load products'));
+        } finally {
+            // Independientemente de si la solicitud fue exitosa o no, desactivamos el estado de carga
+            dispatch(uiActions.productsLoading(false));
         }
     };
 };
@@ -94,77 +37,83 @@ export const getProducts = () => {
 // Obtener detalles de un producto específico
 export const getProductDetails = (id) => {
     return async (dispatch, getState) => {
-        dispatch(uiActions.pDetailLoading());
-        const { products } = getState().products;
-        
         try {
+            // Indicamos que estamos cargando los detalles del producto
+            dispatch(uiActions.pDetailLoading());
+
+            // Obtenemos los productos del estado global
+            const { products } = getState().products;
+
+            // Buscamos el producto por ID
             const product = products.find((p) => p.id === parseInt(id));
+
             if (product) {
+                // Si encontramos el producto, lo enviamos al estado global
                 dispatch(productsActions.setProductDetails(product));
             } else {
-                console.error("Product not found");
+                // Si no encontramos el producto, lanzamos un error
+                throw new Error('Product not found');
             }
         } catch (error) {
-            console.error("Error fetching product details:", error);
+            console.error('Error fetching product details:', error);
+            dispatch(uiActions.setError('Failed to load product details'));
         } finally {
-            dispatch(uiActions.pDetailLoading());
+            // Independientemente de si hubo éxito o error, desactivamos el estado de carga
+            dispatch(uiActions.pDetailLoading(false));
         }
     };
 };
 
-// Añadir un nuevo producto (simulado)
+// Añadir un nuevo producto
 export const addProduct = ({ product }) => {
-    return async dispatch => {
-        dispatch(uiActions.addPrductLoading());
+    return async (dispatch) => {
+        try {
+            // Activamos el estado de carga
+            dispatch(uiActions.addProductLoading());
 
-        const postData = async () => {
-            // Simulamos agregar el producto al arreglo de productos
+            // Simulamos la adición del producto (en la vida real, se haría una petición POST)
             const newProduct = {
                 ...product,
-                id: sampleProducts.length + 1 // Creamos un id único
+                id: new Date().getTime(), // Usamos el tiempo actual como ID único para la simulación
             };
-            sampleProducts.push(newProduct);
-            return 'Producto añadido con éxito'; // Mensaje simulado de éxito
-        };
 
-        try {
-            const message = await postData();
-            console.log('message : ', message);
+            // En la práctica, enviaríamos una petición POST a la API para agregar el producto.
+            // Simulamos una respuesta exitosa.
+            dispatch(productsActions.addProduct(newProduct));
 
-            // Simulamos obtener los productos actualizados
+            // Después de agregar el producto, recargamos los productos
             dispatch(getProducts());
-            dispatch(uiActions.addPrductLoading());
-            
         } catch (error) {
-            console.log(error);
+            console.error('Error adding product:', error);
+            dispatch(uiActions.setError('Failed to add product'));
+        } finally {
+            // Terminamos el estado de carga
+            dispatch(uiActions.addProductLoading(false));
         }
     };
 };
 
-// Actualizar un producto existente (simulado)
+// Actualizar un producto existente
 export const updateProduct = ({ product, id }) => {
-    return async dispatch => {
-        dispatch(uiActions.updateProductLoading());
-
-        const putData = async () => {
-            // Encontramos el producto que se va a actualizar
-            const productIndex = sampleProducts.findIndex(p => p.id === id);
-            if (productIndex !== -1) {
-                // Actualizamos el producto en el arreglo de productos
-                sampleProducts[productIndex] = { ...product, id };
-                return 'Producto actualizado con éxito';
-            } else {
-                throw new Error('Producto no encontrado');
-            }
-        };
-
+    return async (dispatch) => {
         try {
-            await putData();
-            dispatch(getProducts());
+            // Activamos el estado de carga
             dispatch(uiActions.updateProductLoading());
-            
+
+            // Actualizamos el producto en el estado
+            const updatedProduct = { ...product, id };
+
+            // Simulamos la actualización en el arreglo de productos (en la práctica, enviaríamos una petición PUT a la API)
+            dispatch(productsActions.updateProduct(updatedProduct));
+
+            // Después de actualizar el producto, recargamos los productos
+            dispatch(getProducts());
         } catch (error) {
-            console.log(error);
+            console.error('Error updating product:', error);
+            dispatch(uiActions.setError('Failed to update product'));
+        } finally {
+            // Terminamos el estado de carga
+            dispatch(uiActions.updateProductLoading(false));
         }
     };
 };
