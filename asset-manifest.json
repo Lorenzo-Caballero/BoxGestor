@@ -1,16 +1,15 @@
 {
   "files": {
-    "main.css": "/react-template/static/css/main.965fa8b1.css",
-    "main.js": "/react-template/static/js/main.aa0af454.js",
-    "static/media/MachinePen.mp4": "/react-template/static/media/MachinePen.c81be992caf649d92658.mp4",
-    "static/media/machine.png": "/react-template/static/media/machine.241758e4b191cd0c68f6.png",
+    "main.css": "/react-template/static/css/main.4e9972d0.css",
+    "main.js": "/react-template/static/js/main.cd8acfd9.js",
+    "static/media/coneji-removebg-preview.png": "/react-template/static/media/coneji-removebg-preview.e434da83bb0cc48862ea.png",
     "index.html": "/react-template/index.html",
     "static/media/HambergurMenu.svg": "/react-template/static/media/HambergurMenu.9955f00c01a0988ffe2fb16386e78554.svg",
-    "main.965fa8b1.css.map": "/react-template/static/css/main.965fa8b1.css.map",
-    "main.aa0af454.js.map": "/react-template/static/js/main.aa0af454.js.map"
+    "main.4e9972d0.css.map": "/react-template/static/css/main.4e9972d0.css.map",
+    "main.cd8acfd9.js.map": "/react-template/static/js/main.cd8acfd9.js.map"
   },
   "entrypoints": [
-    "static/css/main.965fa8b1.css",
-    "static/js/main.aa0af454.js"
+    "static/css/main.4e9972d0.css",
+    "static/js/main.cd8acfd9.js"
   ]
 }
