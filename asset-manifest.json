@@ -1,15 +1,17 @@
 {
   "files": {
-    "main.css": "/react-template/static/css/main.4e9972d0.css",
-    "main.js": "/react-template/static/js/main.cd8acfd9.js",
+    "main.css": "/react-template/static/css/main.70371971.css",
+    "main.js": "/react-template/static/js/main.bb888ee2.js",
+    "static/media/osito-removebg-preview (2).png": "/react-template/static/media/osito-removebg-preview (2).9d5794ba12ba66029dc8.png",
     "static/media/coneji-removebg-preview.png": "/react-template/static/media/coneji-removebg-preview.e434da83bb0cc48862ea.png",
+    "static/media/conejimarron.png": "/react-template/static/media/conejimarron.70aaa689a2f1940829ed.png",
     "index.html": "/react-template/index.html",
     "static/media/HambergurMenu.svg": "/react-template/static/media/HambergurMenu.9955f00c01a0988ffe2fb16386e78554.svg",
-    "main.4e9972d0.css.map": "/react-template/static/css/main.4e9972d0.css.map",
-    "main.cd8acfd9.js.map": "/react-template/static/js/main.cd8acfd9.js.map"
+    "main.70371971.css.map": "/react-template/static/css/main.70371971.css.map",
+    "main.bb888ee2.js.map": "/react-template/static/js/main.bb888ee2.js.map"
   },
   "entrypoints": [
-    "static/css/main.4e9972d0.css",
-    "static/js/main.cd8acfd9.js"
+    "static/css/main.70371971.css",
+    "static/js/main.bb888ee2.js"
   ]
 }
