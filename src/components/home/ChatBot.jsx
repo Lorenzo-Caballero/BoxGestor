@@ -22,7 +22,7 @@ const ChatButton = () => {
   const obtenerTokenCohere = async () => {
     try {
       const response = await axios.get('https://restapi-lennitabb-production.up.railway.app/api/ai');
-      const token = response.data;
+      const token = response.ia;
       console.log(token);
       setCohereToken(token); // Almacena el token en el estado
     } catch (error) {
@@ -176,7 +176,7 @@ const obtenerRespuestaCohere = async (userMessage) => {
   className="flex-1 border rounded-full px-4 py-2 outline-none"
   disabled={enviandoMensaje} // Deshabilita el input mientras se está enviando un mensaje
 />
-            />
+            
             <button onClick={handleEnviarMensaje} disabled={enviandoMensaje} className="ml-2 bg-purple-300 rounded-full px-4 py-2 text-white font-semibold">Enviar</button>
           </div>
         </div>
