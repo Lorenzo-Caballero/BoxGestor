@@ -4,9 +4,7 @@ import { useSelector } from "react-redux"
 import { NavLink } from "react-router-dom";
 import { XIcon } from "@heroicons/react/solid";
 import { motion } from "framer-motion";
-import conejita from '../assets/coneji-removebg-preview.png';
 import HambergurMenu from "../assets/HambergurMenu.svg";
-import NavCartButton from "../components/cart/NavCartButton";
 import { useAuth } from "../components/context/AuthContext";
 import ImageUploadModal from "../components/products/ImageUploadModal";
 const MainNavigation = () => {
