@@ -1,0 +1,64 @@
+aun me tira este error :Access to fetch at 'https://gestoradmin.store/index.php?recurso=premios-casino' from origin 'https://mediumblue-parrot-101649.hostingersite.com' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:3000' that is not equal to the supplied origin. Have the server send the header with a valid value, or, if an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Comprende este error
+main.6eac6173.js:2 
+            
+            
+           POST https://gestoradmin.store/index.php?recurso=premios-casino net::ERR_FAILED
+onClick @ main.6eac6173.js:2
+De @ main.6eac6173.js:2
+Be @ main.6eac6173.js:2
+(anónimas) @ main.6eac6173.js:2
+Ir @ main.6eac6173.js:2
+Lr @ main.6eac6173.js:2
+(anónimas) @ main.6eac6173.js:2
+uu @ main.6eac6173.js:2
+ze @ main.6eac6173.js:2
+Hr @ main.6eac6173.js:2
+Kt @ main.6eac6173.js:2
+Wt @ main.6eac6173.js:2Comprende este error
+main.6eac6173.js:2 TypeError: Failed to fetch
+    at onClick (main.6eac6173.js:2:770290)
+    at Object.De (main.6eac6173.js:2:439634)
+    at Be (main.6eac6173.js:2:439788)
+    at main.6eac6173.js:2:459688
+    at Ir (main.6eac6173.js:2:459782)
+    at Lr (main.6eac6173.js:2:460197)
+    at main.6eac6173.js:2:465639
+    at uu (main.6eac6173.js:2:529299)
+    at ze (main.6eac6173.js:2:438766)
+
+
+
+Y mi php se ve asi:<?php
+header("Access-Control-Allow-Origin: https://mediumblue-parrot-101649.hostingersite.com");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+require_once 'conexion.php';
+require 'vendor/autoload.php';
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
+$metodo = $_SERVER['REQUEST_METHOD'];
+$recurso = $_GET['recurso'] ?? '';
+$id = $_GET['id'] ?? null;
+
+$input = json_decode(file_get_contents("php://input"), true);
+
+// ---------------- FUNCIONES AUXILIARES ----------------
+function hashPassword($password) {
+    return password_hash($password, PASSWORD_BCRYPT);
+}
+function verifyPassword($password, $hashed) {
+    return password_verify($password, $hashed);
+}
+function generarToken($datos) {
+    $clave = "tu_clave_secreta";
+    return JWT::encode($datos, $clave, 'HS256');
+}

@@ -6,9 +6,7 @@ import { useAuth } from "../components/context/AuthContext";
 import TheSpinner from "../layout/TheSpinner";
 
 const containerVariants = {
-  hidden: {
-    opacity: 0
-  },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: { duration: .3 }
@@ -20,47 +18,53 @@ const containerVariants = {
 };
 
 const Login = () => {
-  const { login } = useAuth(); // Obtenemos los valores del contexto
+  const { login } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const [loading, setLoading] = useState(false); // Estado local para manejar la carga
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Activamos la carga al enviar el formulario
+    setLoading(true);
 
     try {
-      const response = await fetch('https://nodejs-restapi-mysql-fauno-production.up.railway.app/api/clientes/login', {
-        method: 'POST',
+      const response = await fetch("https://dimgrey-gnu-703361.hostingersite.com/index.php?recurso=clientes&login=true", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user',data.email); 
-        localStorage.setItem('admin',data.role); 
-        localStorage.setItem("isAuthenticated", data.email ? true : false)
-        console.log("data",data);
-        login(data.email,data.role); // Utilizamos la función de login del contexto
+
+      const data = await response.json();
+console.log("data",data)
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", data.email);
+        localStorage.setItem("admin","true");
+        localStorage.setItem("id", data.id);
+        localStorage.setItem("isAuthenticated", "true");
+
+        login(data.email, data.rol);
         navigate('/');
       } else {
-        console.error('Error en la solicitud:', response.status);
-        alert('Error en la solicitud. Por favor, inténtalo de nuevo más tarde.');
+        alert(data.message || "Credenciales incorrectas.");
       }
+
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-      alert('Error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
+      console.error("Error al iniciar sesión:", error);
+      alert("Error de conexión con el servidor.");
     } finally {
-      setLoading(false); // Desactivamos la carga después de recibir una respuesta
+      setLoading(false);
     }
   };
 
@@ -73,8 +77,8 @@ const Login = () => {
     >
       <div className="w-[320px] sm:w-[400px] rounded shadow-xl border-2 border-solid px-4 sm:px-8 py-20 mx-auto">
         <h2 className="text-3xl uppercase tracking-wider font-bold text-center mb-12 select-none">
-          <span className="text-primary">Fauno</span>
-          <span className="text-secondary-200">Tattoo</span>
+          <span className="text-[#4779a4]">NH</span>
+          <span className="text-[#2c3e50]">Studio</span>
         </h2>
         <form onSubmit={handleSubmit}>
           <InputField
@@ -95,38 +99,34 @@ const Login = () => {
           />
           <SubmitButton loading={loading} />
         </form>
-        <p className="text-center mt-6">¿Aún no tienes una cuenta? <Link to='/register' className="text-primary">¡Regístrate !</Link></p>
+        <p className="text-center text-[#4779a4] mt-6">¿Aún no tienes una cuenta? <Link to='/register' className="text-primary">¡Regístrate !</Link></p>
       </div>
     </motion.div>
   );
 };
 
-const InputField = ({ type, name, placeholder, value, onChange, required }) => {
-  return (
-    <div className="mb-6">
-      <input
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        className="block w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:border-primary"
-        required={required}
-      />
-    </div>
-  );
-};
+const InputField = ({ type, name, placeholder, value, onChange, required }) => (
+  <div className="mb-6">
+    <input
+      type={type}
+      name={name}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      className="block w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:border-primary"
+      required={required}
+    />
+  </div>
+);
 
-const SubmitButton = ({ loading }) => {
-  return (
-    <button
-      type="submit"
-      className="px-4 py-2 block mt-3 ml-auto text-white bg-primary border border-primary rounded-md hover:bg-opacity-80"
-      disabled={loading}
-    >
-      {loading ? <TheSpinner /> : <><FiLogIn className="inline-block text-xl -mt-1 mr-1" />Login</>}
-    </button>
-  );
-};
+const SubmitButton = ({ loading }) => (
+  <button
+    type="submit"
+    className="px-4 py-2 block mt-3 ml-auto text-white bg-primary border border-primary rounded-md hover:bg-opacity-80"
+    disabled={loading}
+  >
+    {loading ? <TheSpinner /> : <><FiLogIn className="inline-block text-xl -mt-1 mr-1" />Login</>}
+  </button>
+);
 
 export default Login;

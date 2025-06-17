@@ -1,14 +1,8 @@
 import React from 'react';
-
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-
-import Hero from "../components/home/Hero";
-import Overview from '../components/home/Overview';
-import FeaturedProducts from '../components/home/FeaturedProducts';
-import TheServices from '../components/home/TheServices';
-import ChatBot from '../components/home/ChatBot';
-
-
+import CierreDeCaja from './CierreDeCaja';
+import AperturaDeCaja from './AperturaDeCaja';
 const containerVariants = {
   hidden: {
     opacity: 0
@@ -25,6 +19,8 @@ const containerVariants = {
 
 
 const Home = () => {
+  const [aperturaData, setAperturaData] = useState(null);
+
   return (
     <motion.main
       variants={containerVariants}
@@ -32,11 +28,20 @@ const Home = () => {
       animate="visible"
       exit="exit"
     >
-      <Hero />
-      <Overview />
-      <FeaturedProducts />
-      <ChatBot/>
-      <TheServices />
+   {!aperturaData ? (
+        <AperturaDeCaja
+          onConfirmar={(data) => setAperturaData(data)}
+        />
+      ) : (
+        <CierreDeCaja
+          apertura={aperturaData}
+          onCerrarCaja={(cierreData) => {
+            console.log('Cierre completo enviado:', cierreData);
+            // Aquí puedes reiniciar o guardar el cierre
+            setAperturaData(null);
+          }}
+        />
+      )}
     </motion.main>
   );
 };

@@ -1,68 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
-// Arreglo de productos simulados para pruebas
-const sampleProducts = [
-    {
-        id: 1,
-        name: 'Tattoo Oso',
-        price: 25.00,
-        description: 'Un adorable oso tejido a mano.',
-        imageUrl: 'https://example.com/images/oso.png'
-    },
-    {
-        id: 2,
-        name: 'Tattoo Gato',
-        price: 30.00,
-        description: 'Un pequeño gato de lana con ojos grandes.',
-        imageUrl: 'https://example.com/images/gato.png'
-    },
-    {
-        id: 3,
-        name: 'Tattoo Conejo',
-        price: 20.00,
-        description: 'Este conejito es perfecto para abrazar.',
-        imageUrl: 'https://example.com/images/conejo.png'
-    },
-    {
-        id: 4,
-        name: 'Tattoo Perro',
-        price: 28.00,
-        description: 'Un fiel compañero tejido a mano.',
-        imageUrl: 'https://example.com/images/perro.png'
-    },
-    {
-        id: 5,
-        name: 'Tattoo Unicornio',
-        price: 35.00,
-        description: 'Un unicornio mágico lleno de colores.',
-        imageUrl: 'https://example.com/images/unicornio.png'
-    },
-    {
-        id: 6,
-        name: 'Tattoo Dinosaurio',
-        price: 32.00,
-        description: 'Un feroz dinosaurio suave y esponjoso.',
-        imageUrl: 'https://example.com/images/dinosaurio.png'
-    },
-    {
-        id: 7,
-        name: 'Tattoo Elefante',
-        price: 27.00,
-        description: 'Un pequeño elefante con una trompa larga.',
-        imageUrl: 'https://example.com/images/elefante.png'
-    },
-    {
-        id: 8,
-        name: 'Tattoo León',
-        price: 30.00,
-        description: 'El rey de la selva en formato mini.',
-        imageUrl: 'https://example.com/images/leon.png'
-    }
-];
+
 
 const initialState = {
-    products: sampleProducts,
+    products: [],
     filteredProducts: [],
-    productDetails: null, // Iniciamos como null en lugar de sampleProducts
+    productDetails: [],
     totalProducts: 0,
     minPrice: 0,
     maxPrice: 0,
@@ -75,7 +17,6 @@ const initialState = {
         shipping: false
     }
 };
-
 
 
 const productsSlice = createSlice({
@@ -162,6 +103,12 @@ const productsSlice = createSlice({
                 shipping: false
             }
         },
+        deleteProduct(state, action) {
+            state.products = state.products.filter(product => product.id !== action.payload);
+            state.filteredProducts = state.filteredProducts.filter(product => product.id !== action.payload);
+        }
+        
+,        
         setProductDetails: (state, action) => {
             state.productDetails = action.payload;
         },
