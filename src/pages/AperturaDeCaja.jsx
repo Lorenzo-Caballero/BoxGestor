@@ -18,7 +18,7 @@ const AperturaDeCaja = () => {
       try {
         const res = await fetch("https://gestoradmin.store/gestorcaja.php?recurso=empleados");
         const data = await res.json();
-        setEmpleados(data);
+        setEmpleados(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error al cargar empleados:", err);
       }
@@ -28,7 +28,12 @@ const AperturaDeCaja = () => {
       try {
         const res = await fetch("https://gestoradmin.store/gestorcaja.php?recurso=billeteras");
         const data = await res.json();
-        setBilleterasDisponibles(data);
+        // Filtra las de tipo "retiro" (case-insensitive) para que NO aparezcan en la apertura
+        const todas = Array.isArray(data) ? data : [];
+        const operativas = todas.filter(
+          (b) => String(b.tipo || "operativa").toLowerCase() !== "retiro"
+        );
+        setBilleterasDisponibles(operativas);
       } catch (err) {
         console.error("Error al cargar billeteras:", err);
       }
@@ -52,22 +57,37 @@ const AperturaDeCaja = () => {
 
   const enviarAperturaCaja = async () => {
     try {
+      // Validaciones básicas
+      if (!empleado) {
+        setMensaje("Seleccioná un agente.");
+        return;
+      }
+      if (!turno) {
+        setMensaje("Seleccioná un turno.");
+        return;
+      }
+      if (billeterasSeleccionadas.length === 0) {
+        setMensaje("Seleccioná al menos una billetera.");
+        return;
+      }
+
+      // Payload de billeteras (id numérico + datos)
       const billeterasConDatos = billeterasSeleccionadas.map((id) => {
-        const billeteraInfo = billeterasDisponibles.find((b) => b.id === id);
+        const b = billeterasDisponibles.find((x) => x.id === id);
         return {
-          nombre: billeteraInfo?.nombre || "",
-          servicio: billeteraInfo?.servicio || "",
-          titular: billeteraInfo?.titular || "",
-          cbu: billeteraInfo?.cbu || "",
+          id: Number(b?.id) || 0, // <-- aseguramos número
+          servicio: b?.servicio || "",
+          titular: b?.titular || "",
+          cbu: b?.cbu || "",
           monto: parseFloat(montos[id]) || 0,
         };
       });
 
       const datos = {
-        empleado,
+        empleado: Number(empleado),
         turno,
         billeteras: billeterasConDatos,
-        fichas,
+        fichas: Number(fichas) || 0,
       };
 
       const res = await fetch("https://gestoradmin.store/gestorcaja.php?recurso=apertura-caja", {
@@ -84,21 +104,24 @@ const AperturaDeCaja = () => {
         throw new Error("Respuesta no válida del servidor: " + text);
       }
 
-      if (res.ok) {
+      if (res.ok && !data?.error) {
         alert("✅ Caja abierta correctamente");
         navigate("/cerrar-caja");
       } else {
-        alert("❌ Error al abrir caja: " + (data?.error || "Error desconocido"));
+        setMensaje(data?.error || "Error desconocido al abrir la caja.");
       }
     } catch (err) {
-      alert("❌ Error de red o del servidor");
       console.error(err);
+      setMensaje("❌ Error de red o del servidor.");
+    } finally {
+      setTimeout(() => setMensaje(""), 5000);
     }
   };
 
   const recortarCBU = (cbu) => {
     if (!cbu) return "";
-    return `${cbu.slice(0, 6)}...${cbu.slice(-4)}`;
+    const s = String(cbu);
+    return `${s.slice(0, 6)}...${s.slice(-4)}`;
   };
 
   return (
@@ -151,10 +174,11 @@ const AperturaDeCaja = () => {
                   key={b.id}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => toggleBilletera(b.id)}
-                  className={`p-4 rounded-xl cursor-pointer transition-all border text-white ${billeterasSeleccionadas.includes(b.id)
-                    ? "bg-gradient-to-tr from-purple-700 to-cyan-600 border-white"
-                    : "bg-slate-700 border-slate-600 hover:border-white"
-                    }`}
+                  className={`p-4 rounded-xl cursor-pointer transition-all border text-white ${
+                    billeterasSeleccionadas.includes(b.id)
+                      ? "bg-gradient-to-tr from-purple-700 to-cyan-600 border-white"
+                      : "bg-slate-700 border-slate-600 hover:border-white"
+                  }`}
                 >
                   <div className="font-semibold">{b.servicio}</div>
                   <div className="text-sm">{b.titular}</div>
@@ -171,10 +195,7 @@ const AperturaDeCaja = () => {
                 {billeterasSeleccionadas.map((id) => {
                   const billeteraInfo = billeterasDisponibles.find((b) => b.id === id);
                   return (
-                    <div
-                      key={id}
-                      className="bg-slate-800 border border-slate-600 rounded-xl p-4"
-                    >
+                    <div key={id} className="bg-slate-800 border border-slate-600 rounded-xl p-4">
                       <div className="font-semibold">{billeteraInfo?.servicio}</div>
                       <div className="text-sm">{billeteraInfo?.titular}</div>
                       <div className="text-xs mb-2 text-slate-400">{recortarCBU(billeteraInfo?.cbu)}</div>
@@ -187,7 +208,8 @@ const AperturaDeCaja = () => {
                             : ""
                         }
                         onChange={(e) => {
-                          const rawValue = e.target.value.replace(/\./g, ""); // quitar puntos
+                          // Sólo números enteros (si necesitás decimales, se cambia esta lógica)
+                          const rawValue = e.target.value.replace(/\./g, "");
                           if (/^\d*$/.test(rawValue)) {
                             handleMontoChange(id, rawValue);
                           }
@@ -195,7 +217,6 @@ const AperturaDeCaja = () => {
                         className="w-full p-2 mt-2 rounded-lg bg-slate-700 text-white border border-slate-500 focus:outline-none"
                         placeholder="Monto inicial $"
                       />
-
                     </div>
                   );
                 })}
@@ -209,12 +230,10 @@ const AperturaDeCaja = () => {
               type="text"
               inputMode="numeric"
               value={
-                fichas !== undefined && fichas !== ""
-                  ? Number(fichas).toLocaleString("es-AR")
-                  : ""
+                fichas !== undefined && fichas !== "" ? Number(fichas).toLocaleString("es-AR") : ""
               }
               onChange={(e) => {
-                const rawValue = e.target.value.replace(/\./g, ""); // elimina puntos
+                const rawValue = e.target.value.replace(/\./g, "");
                 if (/^\d*$/.test(rawValue)) {
                   setFichas(rawValue);
                 }
@@ -222,7 +241,6 @@ const AperturaDeCaja = () => {
               className="w-full p-3 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none"
               placeholder="Ingresar Fichas Iniciales"
             />
-
           </div>
 
           <motion.button

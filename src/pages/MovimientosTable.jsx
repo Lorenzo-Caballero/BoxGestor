@@ -1,97 +1,139 @@
 import React from "react";
 
-const MovimientosTable = ({ entries, empleados }) => {
-    const formatDate = (dateStr) => {
-        const [year, month, day] = dateStr.split("-");
-        return `${day}/${month}`;
-    };
-
-    const formatDateTime = (dateTimeStr) => {
-        const [date, time] = dateTimeStr.split(" ");
-        return `${formatDate(date)} ${time.slice(0, 5)}`;
-    };
-    const formatCurrency = (value) =>
-        `$${Number(value).toLocaleString("es-AR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
-    return (
-        <div className="overflow-x-auto mt-4">
-            <table className="min-w-full bg-gray-900 rounded-lg text-sm">
-                <thead className="bg-gray-700 text-gray-300">
-                    <tr>
-                        <th className="p-2">Empleado</th>
-                        <th className="p-2">Turno</th>
-                        <th className="p-2">Fecha Apertura</th>
-                        <th className="p-2">Fecha Cierre</th>
-                        <th className="p-2">Iniciales</th>
-                        <th className="p-2">Finales</th>
-                        <th className="p-2">Fichas Iniciales</th>
-                        <th className="p-2">Fichas Finales</th>
-                        <th className="p-2">Premios</th>
-                        <th className="p-2">Bonos</th>
-                        <th className="p-2">Ganancia</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {entries.map((entry) => {
-                        const iniciales = Array.isArray(entry.billeteras_iniciales)
-                            ? entry.billeteras_iniciales.reduce((acc, b) => acc + (b.monto || 0), 0)
-                            : Object.values(entry.billeteras_iniciales || {}).reduce((acc, m) => acc + (m || 0), 0);
-
-                        const finales = Array.isArray(entry.billeteras_finales)
-                            ? entry.billeteras_finales.reduce((acc, b) => acc + (b.monto || 0), 0)
-                            : Object.values(entry.billeteras_finales || {}).reduce((acc, m) => acc + (m || 0), 0);
-
-                        const ganancia = finales - iniciales;
-                        const color = ganancia >= 0 ? "text-green-400" : "text-red-400";
-
-                        return (
-                            <tr key={entry.id} className="hover:bg-gray-800 border-b border-gray-700">
-                                <td className="p-2">{empleados[entry.empleado_id]}</td>
-                                <td className="p-2">{entry.turno}</td>
-                                <td className="p-2">{formatDateTime(entry.fecha_apertura)}</td>
-                                <td className="p-2">{formatDateTime(entry.fecha_cierre)}</td>
-                                <td className="p-2">
-                                    {Array.isArray(entry.billeteras_iniciales)
-                                        ? entry.billeteras_iniciales.map((b, idx) => (
-                                            <div key={idx}>
-                                                {b.servicio}: {formatCurrency(b.monto)}
-                                            </div>
-                                        ))
-                                        : Object.entries(entry.billeteras_iniciales || {}).map(([servicio, monto], idx) => (
-                                            <div key={idx}>
-                                                {servicio}: {formatCurrency(monto)}
-                                            </div>
-                                        ))}
-                                </td>
-                                <td className="p-2">
-                                    {Array.isArray(entry.billeteras_finales)
-                                        ? entry.billeteras_finales.map((b, idx) => (
-                                            <div key={idx}>
-                                                {b.servicio}: {formatCurrency(b.monto)}
-                                            </div>
-                                        ))
-                                        : Object.entries(entry.billeteras_finales || {}).map(([servicio, monto], idx) => (
-                                            <div key={idx}>
-                                                {servicio}: {formatCurrency(monto)}
-                                            </div>
-                                        ))}
-                                </td>
-                                <td className="p-2">{entry.fichas_iniciales}</td>
-                                <td className="p-2">{entry.fichas_finales}</td>
-                                <td className="p-2 text-yellow-300">{entry.premios || 0}</td>
-                                <td className="p-2 text-blue-300">{entry.bonos || 0}</td>
-                                <td className={`p-2 font-bold ${color}`}>
-                                    {ganancia >= 0 ? `+ ${formatCurrency(ganancia)}` : `- ${formatCurrency(Math.abs(ganancia))}`}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
-    );
+const formatDate = (dateStr = "") => {
+  const [year, month, day] = String(dateStr).split("-");
+  if (!year || !month || !day) return dateStr || "";
+  return `${day}/${month}`;
 };
 
-export default MovimientosTable;
+const formatDateTime = (dateTimeStr = "") => {
+  const [date = "", time = ""] = String(dateTimeStr).split(" ");
+  return `${formatDate(date)} ${String(time).slice(0, 5)}`.trim();
+};
+
+const formatCurrency = (value) =>
+  `$${Number(value || 0).toLocaleString("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+export default function MovimientosTable({ entries = [], empleados = {} }) {
+  return (
+    <div className="overflow-x-auto mt-4">
+      <table className="min-w-full bg-gray-900 rounded-lg text-sm">
+        <thead className="bg-gray-700 text-gray-300">
+          <tr>
+            <th className="p-2 text-left">Empleado</th>
+            <th className="p-2 text-left">Turno</th>
+            <th className="p-2 text-left">Fecha Apertura</th>
+            <th className="p-2 text-left">Fecha Cierre</th>
+            <th className="p-2 text-left">Iniciales</th>
+            <th className="p-2 text-left">Finales</th>
+            <th className="p-2 text-right">Fichas Iniciales</th>
+            <th className="p-2 text-right">Fichas Finales</th>
+            <th className="p-2 text-right">Premios</th>
+            <th className="p-2 text-right">Bonos</th>
+            <th className="p-2 text-right">Ganancia</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {entries.map((entry) => {
+            // Sumatorias para el fallback "finales - iniciales"
+            const iniciales = Array.isArray(entry?.billeteras_iniciales)
+              ? entry.billeteras_iniciales.reduce((acc, b) => acc + Number(b?.monto || 0), 0)
+              : Object.values(entry?.billeteras_iniciales || {}).reduce((acc, m) => acc + Number(m || 0), 0);
+
+            const finales = Array.isArray(entry?.billeteras_finales)
+              ? entry.billeteras_finales.reduce((acc, b) => acc + Number(b?.monto || 0), 0)
+              : Object.values(entry?.billeteras_finales || {}).reduce((acc, m) => acc + Number(m || 0), 0);
+
+            // 1) Si viene desde el padre, usarlo
+            const fromParent =
+              typeof entry.ganancia === "number" ? Number(entry.ganancia) : null;
+
+            // 2) Si no, usar retiros - (premios + bonos) cuando haya auxiliares
+            const hasAux =
+              entry._retirosCaja !== undefined ||
+              entry._premiosCaja !== undefined ||
+              entry._bonosCaja !== undefined;
+
+            const byRetirosPremiosBonos = hasAux
+              ? Number(entry._retirosCaja || 0) -
+                (Number(entry._premiosCaja || 0) + Number(entry._bonosCaja || 0))
+              : null;
+
+            // 3) Fallback final
+            const computedFallback = finales - iniciales;
+
+            const ganancia =
+              fromParent ?? byRetirosPremiosBonos ?? computedFallback;
+
+            const color = ganancia >= 0 ? "text-green-400" : "text-red-400";
+
+            return (
+              <tr key={entry.id} className="hover:bg-gray-800 border-b border-gray-700">
+                <td className="p-2">{empleados[entry.empleado_id] || `ID ${entry.empleado_id}`}</td>
+                <td className="p-2">{entry.turno}</td>
+                <td className="p-2">{formatDateTime(entry.fecha_apertura)}</td>
+                <td className="p-2">{formatDateTime(entry.fecha_cierre)}</td>
+
+                {/* Iniciales */}
+                <td className="p-2">
+                  {Array.isArray(entry?.billeteras_iniciales)
+                    ? entry.billeteras_iniciales.map((b, idx) => (
+                        <div key={idx}>
+                          {b.servicio}: {formatCurrency(b.monto)}
+                        </div>
+                      ))
+                    : Object.entries(entry?.billeteras_iniciales || {}).map(
+                        ([servicio, monto], idx) => (
+                          <div key={idx}>
+                            {servicio}: {formatCurrency(monto)}
+                          </div>
+                        )
+                      )}
+                </td>
+
+                {/* Finales */}
+                <td className="p-2">
+                  {Array.isArray(entry?.billeteras_finales)
+                    ? entry.billeteras_finales.map((b, idx) => (
+                        <div key={idx}>
+                          {b.servicio}: {formatCurrency(b.monto)}
+                        </div>
+                      ))
+                    : Object.entries(entry?.billeteras_finales || {}).map(
+                        ([servicio, monto], idx) => (
+                          <div key={idx}>
+                            {servicio}: {formatCurrency(monto)}
+                          </div>
+                        )
+                      )}
+                </td>
+
+                <td className="p-2 text-right">
+                  {Number(entry?.fichas_iniciales || 0).toLocaleString("es-AR")}
+                </td>
+                <td className="p-2 text-right">
+                  {Number(entry?.fichas_finales || 0).toLocaleString("es-AR")}
+                </td>
+                <td className="p-2 text-right text-yellow-300">
+                  {formatCurrency(entry?.premios || 0)}
+                </td>
+                <td className="p-2 text-right text-blue-300">
+                  {formatCurrency(entry?.bonos || 0)}
+                </td>
+
+                <td className={`p-2 text-right font-bold ${color}`}>
+                  {ganancia >= 0 ? "+ " : "- "}
+                  {formatCurrency(Math.abs(ganancia))}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

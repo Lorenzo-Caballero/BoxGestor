@@ -13,7 +13,7 @@ const AppGames = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AperturaDeCaja />} />
         <Route path="/cerrar-caja" element={<CierreDeCaja />} />
-        <Route path="/balance-caja" element={<Balance />} />
+        <Route path="/balance" element={<Balance />} />
         <Route path="/billeteras" element={<Billeteras />} />
  
       </Routes>
