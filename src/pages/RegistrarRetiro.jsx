@@ -8,16 +8,16 @@ const RegistroRetiros = ({
   billeteras = [],
   // billeteras externas (del jefe) opcionales
   billeterasExternas = [],
-  // NUEVO: callback genérico (recibe { tipo: 'interna'|'retiro', desde, hasta, monto })
+  // Callback unificado: recibe { tipo: 'transferencia'|'retiro', desde, hasta, monto }
   onGuardarMovimiento,
-  // COMPAT: si el padre sólo maneja retiros, usa este
+  // COMPAT: si el padre sólo maneja retiros
   onGuardar,
-  // OPCIONAL: si el padre quiere manejar transferencias por separado
+  // COMPAT: si el padre quiere manejar transferencias por separado
   onGuardarTransferencia,
 }) => {
-  // Si el padre no pasó callback para internas, oculto el selector y fijo "retiro"
+  // Si el padre no pasó callback para internas, oculto selector y fijo "retiro"
   const modoSoloRetiro = !onGuardarMovimiento && !onGuardarTransferencia;
-  const [tipo, setTipo] = useState(modoSoloRetiro ? "retiro" : "interna"); // 'interna' | 'retiro'
+  const [modo, setModo] = useState(modoSoloRetiro ? "retiro" : "transferencia"); // 'transferencia' | 'retiro'
   const [desdeId, setDesdeId] = useState("");
   const [hastaId, setHastaId] = useState("");
   const [montoRaw, setMontoRaw] = useState(""); // solo dígitos
@@ -54,23 +54,26 @@ const RegistroRetiros = ({
     return (billeteras || []).filter((b) => Number(b.id) !== dId);
   }, [billeteras, desdeId]);
 
+  const pickFrom = (list, id) =>
+    list.find((b) => String(b.id) === String(id)) || null;
+
   const handleGuardar = () => {
     if (!visible) return;
     if (!cajaId) {
       alert("No hay caja abierta.");
       return;
     }
-    // campos
+    // validaciones
     if (!desdeId || !montoRaw) {
       alert("Completá todos los campos.");
       return;
     }
     if (!modoSoloRetiro) {
-      if (tipo === "interna" && !hastaId) return alert("Elegí la billetera destino (interna).");
-      if (tipo === "retiro" && billeterasExternas.length > 0 && !hastaId)
+      if (modo === "transferencia" && !hastaId)
+        return alert("Elegí la billetera destino (interna).");
+      if (modo === "retiro" && billeterasExternas.length > 0 && !hastaId)
         return alert("Elegí la billetera externa destino.");
     } else {
-      // solo retiro
       if (billeterasExternas.length > 0 && !hastaId)
         return alert("Elegí la billetera externa destino.");
     }
@@ -81,62 +84,64 @@ const RegistroRetiros = ({
       return;
     }
 
-    const desdeObj = (billeteras || []).find((b) => Number(b.id) === Number(desdeId));
-    if (!desdeObj) return alert("Billetera de origen no encontrada.");
+    const desdeObjFull = pickFrom(billeteras, desdeId);
+    if (!desdeObjFull) return alert("Billetera de origen no encontrada.");
 
-    let hastaObj;
+    let hastaObjFull;
+    const modoFinal = modoSoloRetiro ? "retiro" : modo;
 
-    const tipoEfectivo = modoSoloRetiro ? "retiro" : tipo;
-
-    if (tipoEfectivo === "interna") {
-      hastaObj = (billeteras || []).find((b) => Number(b.id) === Number(hastaId));
-      if (!hastaObj) return alert("Billetera de destino no encontrada.");
-      if (Number(hastaObj.id) === Number(desdeObj.id))
+    if (modoFinal === "transferencia") {
+      hastaObjFull = pickFrom(billeteras, hastaId);
+      if (!hastaObjFull) return alert("Billetera de destino no encontrada.");
+      if (String(hastaObjFull.id) === String(desdeObjFull.id))
         return alert("En transferencias internas, 'Desde' y 'Hasta' deben ser distintos.");
     } else {
-      // RETIRO EXTERNO: si tenés lista de externas, usamos la elegida; sino, generamos un placeholder
+      // RETIRO EXTERNO
       if ((billeterasExternas || []).length > 0) {
-        hastaObj = (billeterasExternas || []).find((b) => String(b.id) === String(hastaId));
-        if (!hastaObj) return alert("Billetera externa no encontrada.");
-        hastaObj = { ...hastaObj, externa: true };
+        hastaObjFull = pickFrom(billeterasExternas, hastaId);
+        if (!hastaObjFull) return alert("Billetera externa no encontrada.");
       } else {
         // placeholder si no pasaste billeterasExternas
-        hastaObj = {
+        hastaObjFull = {
           id: 0,
           servicio: "Retiro (Jefe)",
           titular: "Jefe",
           cbu: "",
-          externa: true,
         };
       }
     }
 
-    // DEVOLVER AL PADRE (todas las variantes)
+    // Shape normalizado para el backend/padre
+    const desde = {
+      id: Number(desdeObjFull.id) || 0,
+      servicio: desdeObjFull.servicio || "",
+      titular: desdeObjFull.titular || "",
+      cbu: desdeObjFull.cbu || "",
+    };
+
+    const hasta = {
+      id: Number(hastaObjFull.id) || 0,
+      servicio: hastaObjFull.servicio || "",
+      titular: hastaObjFull.titular || "",
+      cbu: hastaObjFull.cbu || "",
+      // marcamos explicitamente retiros
+      tipo: modoFinal === "retiro" ? "retiro" : undefined,
+    };
+
     const payload = {
-      tipo: tipoEfectivo,
-      desde: {
-        id: Number(desdeObj.id) || 0,
-        servicio: desdeObj.servicio || "",
-        titular: desdeObj.titular || "",
-        cbu: desdeObj.cbu || "",
-      },
-      hasta: {
-        id: Number(hastaObj.id) || 0,
-        servicio: hastaObj.servicio || "",
-        titular: hastaObj.titular || "",
-        cbu: hastaObj.cbu || "",
-        externa: !!hastaObj.externa,
-      },
+      tipo: modoFinal, // 'transferencia' | 'retiro'
+      desde,
+      hasta,
       monto: montoNum,
     };
 
     if (typeof onGuardarMovimiento === "function") {
       onGuardarMovimiento(payload);
     } else if (payload.tipo === "retiro" && typeof onGuardar === "function") {
-      onGuardar({ desde: payload.desde, hasta: payload.hasta, monto: payload.monto });
-    } else if (payload.tipo === "interna" && typeof onGuardarTransferencia === "function") {
-      onGuardarTransferencia({ desde: payload.desde, hasta: payload.hasta, monto: payload.monto });
-    } else if (payload.tipo === "interna" && !onGuardarTransferencia) {
+      onGuardar({ desde, hasta, monto: montoNum });
+    } else if (payload.tipo === "transferencia" && typeof onGuardarTransferencia === "function") {
+      onGuardarTransferencia({ desde, hasta, monto: montoNum });
+    } else if (payload.tipo === "transferencia" && !onGuardarTransferencia) {
       alert(
         "Transferencia interna registrada localmente no soportada por el padre. " +
           "Activá onGuardarMovimiento u onGuardarTransferencia en el componente padre."
@@ -148,7 +153,7 @@ const RegistroRetiros = ({
     setDesdeId("");
     setHastaId("");
     setMontoRaw("");
-    if (!modoSoloRetiro) setTipo("interna");
+    if (!modoSoloRetiro) setModo("transferencia");
     onClose?.();
   };
 
@@ -164,13 +169,13 @@ const RegistroRetiros = ({
             <label className="block font-medium mb-1">Tipo</label>
             <select
               className="w-full border p-2 rounded"
-              value={tipo}
+              value={modo}
               onChange={(e) => {
-                setTipo(e.target.value);
+                setModo(e.target.value);
                 setHastaId("");
               }}
             >
-              <option value="interna">Transferencia interna</option>
+              <option value="transferencia">Transferencia interna</option>
               <option value="retiro">Retiro (fuera del sistema)</option>
             </select>
           </div>
@@ -192,7 +197,7 @@ const RegistroRetiros = ({
           </select>
         </div>
 
-        {(modoSoloRetiro || tipo === "retiro") ? (
+        {(modoSoloRetiro || modo === "retiro") ? (
           <div className="mb-3">
             <label className="block font-medium mb-1">Hasta (externa)</label>
             {billeterasExternas.length > 0 ? (
@@ -245,9 +250,7 @@ const RegistroRetiros = ({
               onBlur={() => setMontoFocused(false)}
               onChange={(e) => {
                 const digits = e.target.value.replace(/\D/g, "");
-                if (/^\d*$/.test(digits)) {
-                  setMontoRaw(digits);
-                }
+                if (/^\d*$/.test(digits)) setMontoRaw(digits);
               }}
               placeholder="0"
             />

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RegistroRetiros from "./RegistrarRetiro";
 
+const API = "https://gestoradmin.store/gestorcaja.php";
+
 export default function CierreCaja({ onCerrarCaja }) {
   const [datosApertura, setDatosApertura] = useState(null);
   const [empleadoId, setEmpleadoId] = useState(null);
@@ -17,8 +19,8 @@ export default function CierreCaja({ onCerrarCaja }) {
   const [transferencias, setTransferencias] = useState([]);   // {desde, hasta, monto}
   const [retirosExternos, setRetirosExternos] = useState([]); // {desde, hasta(externa), monto}
 
-  // Premios / Bonos / Fichas (solo dígitos, formateo amigable)
-  const [premiosRaw, setPremiosRaw] = useState("");     
+  // Premios / Bonos / Fichas (solo dígitos, con display formateado)
+  const [premiosRaw, setPremiosRaw] = useState("");
   const [premiosFocused, setPremiosFocused] = useState(false);
 
   const [bonosRaw, setBonosRaw] = useState("");
@@ -26,6 +28,10 @@ export default function CierreCaja({ onCerrarCaja }) {
 
   const [fichasRaw, setFichasRaw] = useState("");
   const [fichasFocused, setFichasFocused] = useState(false);
+
+  // NUEVO: Saldo de jugadores (liability) final
+  const [saldoJugadoresFinRaw, setSaldoJugadoresFinRaw] = useState("");
+  const [saldoJugadoresFinFocused, setSaldoJugadoresFinFocused] = useState(false);
 
   const [mensaje, setMensaje] = useState("");
   const [loading, setLoading] = useState(true);
@@ -51,13 +57,16 @@ export default function CierreCaja({ onCerrarCaja }) {
     return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
+  const onlyDigits = (s) => String(s || "").replace(/\D/g, "");
+  const toNumber = (digits) => (digits === "" ? 0 : Number(digits));
+
   useEffect(() => {
     const fetchAll = async () => {
       try {
         const [aperturaRes, empleadosRes, billeterasRes] = await Promise.all([
-          fetch("https://gestoradmin.store/gestorcaja.php?recurso=apertura-caja"),
-          fetch("https://gestoradmin.store/gestorcaja.php?recurso=empleados"),
-          fetch("https://gestoradmin.store/gestorcaja.php?recurso=billeteras"),
+          fetch(`${API}?recurso=apertura-caja`),
+          fetch(`${API}?recurso=empleados`),
+          fetch(`${API}?recurso=billeteras`),
         ]);
 
         if (!aperturaRes.ok) throw new Error("No se pudo obtener la apertura");
@@ -102,6 +111,7 @@ export default function CierreCaja({ onCerrarCaja }) {
         setAperturaId(apertura.id);
         setBilleterasDisponibles(billeterasIni);
 
+        // externas = tipo 'retiro' (no operativas)
         const externas = Array.isArray(todasBilleteras)
           ? todasBilleteras.filter(
               (b) => String(b.tipo || "").toLowerCase() === "retiro"
@@ -124,7 +134,21 @@ export default function CierreCaja({ onCerrarCaja }) {
     setMontosCierre((prev) => ({ ...prev, [key]: val }));
   };
 
-  const agregarMovimiento = (mov) => { /* ... igual que antes ... */ };
+  // Recibe objetos del modal. Si 'hasta' es tipo 'retiro' => va a retirosExternos, si no => transferencia interna
+  const agregarMovimiento = (mov) => {
+    if (!mov || !mov.desde || !mov.hasta || !mov.monto) return;
+    const monto = Number(mov.monto) || 0;
+    const esRetiro =
+      String(mov.hasta?.tipo || "").toLowerCase() === "retiro" ||
+      mov.tipo === "retiro";
+
+    if (esRetiro) {
+      setRetirosExternos((prev) => [...prev, { ...mov, monto }]);
+    } else {
+      setTransferencias((prev) => [...prev, { ...mov, monto }]);
+    }
+  };
+
   const eliminarTransferencia = (i) =>
     setTransferencias((prev) => prev.filter((_, idx) => idx !== i));
   const eliminarRetiro = (i) =>
@@ -140,51 +164,87 @@ export default function CierreCaja({ onCerrarCaja }) {
       faltantes ||
       premiosRaw === "" ||
       bonosRaw === "" ||
-      fichasRaw === ""
+      fichasRaw === "" ||
+      saldoJugadoresFinRaw === ""
     ) {
       setMensaje("Completá todos los campos antes de cerrar la caja.");
       return;
     }
-
-    const fechaCierre = new Date().toISOString();
 
     const billeteras_finales = billeterasDisponibles.map((b) => ({
       id: Number(b.id || 0),
       servicio: b.servicio,
       titular: b.titular,
       cbu: b.cbu,
-      monto: Number(montosCierre[walletKey(b)]) || 0,
+      monto: toNumber(montosCierre[walletKey(b)]),
     }));
 
-    const cierrePayload = {
-      id: aperturaId,
-      premios: Number(premiosRaw) || 0,
-      bonos: Number(bonosRaw) || 0,
-      fichas_finales: Number(fichasRaw) || 0,
-      fecha_cierre: fechaCierre,
+    const body = {
       billeteras_finales,
+      premios: toNumber(premiosRaw),
+      bonos: toNumber(bonosRaw),
+      fichas_finales: toNumber(fichasRaw),
+      // NUEVO: enviar liability final
+      saldo_jugadores_final: toNumber(saldoJugadoresFinRaw),
     };
 
     try {
-      const resClose = await fetch(
-        "https://gestoradmin.store/gestorcaja.php?recurso=apertura-caja",
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(cierrePayload),
-        }
-      );
+      // 1) Cerrar caja
+      const resClose = await fetch(`${API}?recurso=apertura-caja`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-      if (!resClose.ok) {
-        setMensaje("Error al cerrar la caja. Intentá nuevamente.");
+      const text = await resClose.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+
+      if (!resClose.ok || data?.error) {
+        setMensaje(data?.error || "Error al cerrar la caja. Intentá nuevamente.");
         return;
       }
 
-      // registrar transferencias y retiros (igual que antes)...
+      // 2) Registrar transferencias internas
+      if (transferencias.length > 0) {
+        await Promise.all(
+          transferencias.map((t) =>
+            fetch(`${API}?recurso=transferencias`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                caja_id: aperturaId,
+                desde_billetera: t.desde,
+                hasta_billetera: t.hasta,
+                monto: Number(t.monto) || 0,
+                empleado_id: empleadoId || null,
+              }),
+            })
+          )
+        );
+      }
+
+      // 3) Registrar retiros externos (fondos que salen del sistema)
+      if (retirosExternos.length > 0) {
+        await Promise.all(
+          retirosExternos.map((r) =>
+            fetch(`${API}?recurso=retiros`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                caja_id: aperturaId,
+                desde_billetera: r.desde,
+                hasta_billetera: r.hasta, // externa tipo 'retiro'
+                monto: Number(r.monto) || 0,
+              }),
+            })
+          )
+        );
+      }
 
       alert("✅ Caja cerrada correctamente");
+      onCerrarCaja && onCerrarCaja({ ...body, id: aperturaId });
       navigate("/");
-      onCerrarCaja && onCerrarCaja(cierrePayload);
     } catch (error) {
       console.error("Error al cerrar la caja:", error);
       setMensaje("Ocurrió un error al cerrar la caja.");
@@ -203,6 +263,13 @@ export default function CierreCaja({ onCerrarCaja }) {
 
   const fichasDisplay =
     fichasFocused ? formatMilesAR(fichasRaw) : fichasRaw !== "" ? formatARS(Number(fichasRaw)) : "";
+
+  const saldoJugadoresFinDisplay =
+    saldoJugadoresFinFocused
+      ? formatMilesAR(saldoJugadoresFinRaw)
+      : saldoJugadoresFinRaw !== ""
+      ? formatARS(Number(saldoJugadoresFinRaw))
+      : "";
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 w-[520px] mx-auto">
@@ -266,10 +333,7 @@ export default function CierreCaja({ onCerrarCaja }) {
             value={premiosDisplay}
             onFocus={() => setPremiosFocused(true)}
             onBlur={() => setPremiosFocused(false)}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, "");
-              if (/^\d*$/.test(digits)) setPremiosRaw(digits);
-            }}
+            onChange={(e) => setPremiosRaw(onlyDigits(e.target.value))}
             placeholder="0"
           />
         </div>
@@ -286,17 +350,14 @@ export default function CierreCaja({ onCerrarCaja }) {
             value={bonosDisplay}
             onFocus={() => setBonosFocused(true)}
             onBlur={() => setBonosFocused(false)}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, "");
-              if (/^\d*$/.test(digits)) setBonosRaw(digits);
-            }}
+            onChange={(e) => setBonosRaw(onlyDigits(e.target.value))}
             placeholder="0"
           />
         </div>
       </div>
 
       {/* Fichas Finales */}
-      <div className="mb-6">
+      <div className="mb-4">
         <label className="block font-medium mb-1">Fichas Finales</label>
         <div className="relative">
           <input
@@ -306,13 +367,30 @@ export default function CierreCaja({ onCerrarCaja }) {
             value={fichasDisplay}
             onFocus={() => setFichasFocused(true)}
             onBlur={() => setFichasFocused(false)}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, "");
-              if (/^\d*$/.test(digits)) setFichasRaw(digits);
-            }}
+            onChange={(e) => setFichasRaw(onlyDigits(e.target.value))}
             placeholder="0"
           />
         </div>
+      </div>
+
+      {/* NUEVO: Saldo de jugadores final (liability) */}
+      <div className="mb-6">
+        <label className="block font-medium mb-1">Saldo de jugadores (fin) 💼</label>
+        <div className="relative">
+          <input
+            type="text"
+            inputMode="numeric"
+            className="w-full p-1 border rounded"
+            value={saldoJugadoresFinDisplay}
+            onFocus={() => setSaldoJugadoresFinFocused(true)}
+            onBlur={() => setSaldoJugadoresFinFocused(false)}
+            onChange={(e) => setSaldoJugadoresFinRaw(onlyDigits(e.target.value))}
+            placeholder="Ej: 227.095"
+          />
+        </div>
+        <p className="text-[11px] text-gray-500 mt-1">
+          Total de fichas en posesión de jugadores al cierre (pasivo de la plataforma).
+        </p>
       </div>
 
       <button
@@ -339,6 +417,7 @@ export default function CierreCaja({ onCerrarCaja }) {
         billeterasExternas={billeterasExternas}
         onGuardarMovimiento={agregarMovimiento}
       />
+
       {/* Listados de lo cargado en el modal */}
       {transferencias.length > 0 && (
         <div className="mt-6 text-sm">
@@ -346,8 +425,12 @@ export default function CierreCaja({ onCerrarCaja }) {
           <ul className="list-disc pl-5 space-y-1">
             {transferencias.map((t, i) => (
               <li key={`t-${i}`}>
-                {t.desde.servicio} → {t.hasta.servicio} — ${Number(t.monto).toLocaleString("es-AR")}{" "}
-                <button className="ml-2 text-red-600 hover:underline" onClick={() => eliminarTransferencia(i)}>
+                {t.desde.servicio} → {t.hasta.servicio} — $
+                {Number(t.monto).toLocaleString("es-AR")}{" "}
+                <button
+                  className="ml-2 text-red-600 hover:underline"
+                  onClick={() => eliminarTransferencia(i)}
+                >
                   eliminar
                 </button>
               </li>
@@ -362,8 +445,12 @@ export default function CierreCaja({ onCerrarCaja }) {
           <ul className="list-disc pl-5 space-y-1">
             {retirosExternos.map((r, i) => (
               <li key={`r-${i}`}>
-                {r.desde.servicio} → {r.hasta?.servicio || "Retiro (Jefe)"} — ${Number(r.monto).toLocaleString("es-AR")}{" "}
-                <button className="ml-2 text-red-600 hover:underline" onClick={() => eliminarRetiro(i)}>
+                {r.desde.servicio} → {r.hasta?.servicio || "Retiro (Jefe)"} — $
+                {Number(r.monto).toLocaleString("es-AR")}{" "}
+                <button
+                  className="ml-2 text-red-600 hover:underline"
+                  onClick={() => eliminarRetiro(i)}
+                >
                   eliminar
                 </button>
               </li>

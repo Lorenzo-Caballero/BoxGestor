@@ -14,14 +14,19 @@ import {
   ReferenceLine,
 } from "recharts";
 
+/* =========================
+   Helpers de formato
+   ========================= */
 const formatDate = (dateStr = "") => {
-  const [year, month, day] = (dateStr || "").split("-");
-  return `${day}/${month}`;
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}`;
 };
 
 const formatDateTime = (dateTimeStr = "") => {
-  const [date, time] = (dateTimeStr || "").split(" ");
-  return `${formatDate(date)} ${String(time || "").slice(0, 5)}`;
+  if (!dateTimeStr) return "";
+  const [date, time = ""] = dateTimeStr.split(" ");
+  return `${formatDate(date)} ${time.slice(0, 5)}`;
 };
 
 const formatCurrency = (value) =>
@@ -30,20 +35,22 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 2,
   })}`;
 
+const safeNum = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
+
 /* =========================
    Helpers para billeteras
    ========================= */
-const walletKey = (w = {}) => `${w.servicio || ""}|${w.cbu || ""}|${w.titular || ""}`;
+const walletKey = (w = {}) =>
+  `${w?.servicio || ""}|${w?.cbu || ""}|${w?.titular || ""}`;
 
 const buildWalletMapFromCaja = (entry) => {
   const iniciales = Array.isArray(entry?.billeteras_iniciales)
     ? entry.billeteras_iniciales
     : Object.values(entry?.billeteras_iniciales || {});
-
   const map = new Map();
   iniciales.forEach((b) => {
     const k = walletKey(b);
-    const monto = Number(b?.monto || 0);
+    const monto = safeNum(b?.monto);
     map.set(k, {
       ...b,
       saldo_inicial: monto,
@@ -60,12 +67,8 @@ const buildFinalMapFromCaja = (entry) => {
   const finales = Array.isArray(entry?.billeteras_finales)
     ? entry.billeteras_finales
     : Object.values(entry?.billeteras_finales || {});
-
   const map = new Map();
-  finales.forEach((b) => {
-    const k = walletKey(b);
-    map.set(k, Number(b?.monto || 0));
-  });
+  finales.forEach((b) => map.set(walletKey(b), safeNum(b?.monto)));
   return map;
 };
 
@@ -73,7 +76,7 @@ const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
   (transferencias || [])
     .filter((t) => Number(t.caja_id) === Number(cajaId))
     .forEach((t) => {
-      const m = Number(t.monto || 0);
+      const m = safeNum(t.monto);
       const d = t.desde_billetera || {};
       const h = t.hasta_billetera || {};
       const kd = walletKey(d);
@@ -93,7 +96,7 @@ const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
   (retiros || [])
     .filter((r) => Number(r.caja_id) === Number(cajaId))
     .forEach((r) => {
-      const m = Number(r.monto || 0);
+      const m = safeNum(r.monto);
       const d = r.desde_billetera || {};
       const kd = walletKey(d);
       if (!map.has(kd))
@@ -105,11 +108,52 @@ const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
   return Array.from(map.values());
 };
 
-const calcFaltantesCaja = (entry, transferencias, retiros) => {
+/* =========================
+   Faltantes por caja
+   - Si la caja trae snapshot (descuadre_detalle / descuadre_total) lo usamos.
+   - Si no, lo calculamos con transferencias + retiros.
+   ========================= */
+const calcFaltantesCajaFromSnapshot = (entry) => {
+  try {
+    const detalle = Array.isArray(entry?.descuadre_detalle)
+      ? entry.descuadre_detalle
+      : JSON.parse(entry?.descuadre_detalle || "[]");
+
+    let totalFaltante = 0;
+    let totalSobrante = 0;
+
+    const porBilletera = (detalle || []).map((d) => {
+      const esp = safeNum(d.esperado);
+      const fin = safeNum(d.final);
+      const dif = safeNum(d.diferencia);
+      if (dif < 0) totalFaltante += -dif;
+      if (dif > 0) totalSobrante += dif;
+      return {
+        servicio: d.servicio || "",
+        titular: d.titular || "",
+        cbu: d.cbu || "",
+        esperado: esp,
+        final: fin,
+        diferencia: dif,
+      };
+    });
+
+    return {
+      totalFaltante,
+      totalSobrante,
+      porBilletera,
+      usedSnapshot: true,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const calcFaltantesCajaRecompute = (entry, transferencias, retiros) => {
   const base = buildWalletMapFromCaja(entry);
   const esperadoArr = applyMovimientosCaja(base, entry.id, transferencias, retiros);
   const esperadoMap = new Map();
-  esperadoArr.forEach((b) => esperadoMap.set(walletKey(b), Number(b.saldo_actual || 0)));
+  esperadoArr.forEach((b) => esperadoMap.set(walletKey(b), safeNum(b.saldo_actual)));
 
   const finalesMap = buildFinalMapFromCaja(entry);
 
@@ -119,8 +163,8 @@ const calcFaltantesCaja = (entry, transferencias, retiros) => {
   const porBilletera = [];
 
   keys.forEach((k) => {
-    const esp = Number(esperadoMap.get(k) || 0);
-    const fin = Number(finalesMap.get(k) || 0);
+    const esp = safeNum(esperadoMap.get(k));
+    const fin = safeNum(finalesMap.get(k));
     const diff = fin - esp; // <0 faltante, >0 sobrante
     if (diff < 0) totalFaltante += -diff;
     if (diff > 0) totalSobrante += diff;
@@ -136,9 +180,18 @@ const calcFaltantesCaja = (entry, transferencias, retiros) => {
     });
   });
 
-  return { totalFaltante, totalSobrante, porBilletera };
+  return { totalFaltante, totalSobrante, porBilletera, usedSnapshot: false };
 };
 
+const calcFaltantesCaja = (entry, transferencias, retiros) => {
+  const fromSnap = calcFaltantesCajaFromSnapshot(entry);
+  if (fromSnap) return fromSnap;
+  return calcFaltantesCajaRecompute(entry, transferencias, retiros);
+};
+
+/* =========================
+   Componente principal
+   ========================= */
 const CajaAnalytics = () => {
   const [data, setData] = useState([]);
   const [empleados, setEmpleados] = useState({});
@@ -154,9 +207,10 @@ const CajaAnalytics = () => {
   const [expandedDate, setExpandedDate] = useState(null);
   const [showAllMovements, setShowAllMovements] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFichasLine, setShowFichasLine] = useState(true); // toggle línea de fichas
+  const [showFichasLine, setShowFichasLine] = useState(true);
   const navigate = useNavigate();
 
+  /* -------- Fetch -------- */
   useEffect(() => {
     const fetchData = async () => {
       const [resCajas, resEmpleados, resRetiros, resTransf] = await Promise.all([
@@ -172,16 +226,14 @@ const CajaAnalytics = () => {
       const transfData = await resTransf.json();
 
       const empleadosMap = {};
-      (empleadosData || []).forEach((emp) => {
-        empleadosMap[emp.id] = emp.nombre;
-      });
+      (empleadosData || []).forEach((emp) => (empleadosMap[emp.id] = emp.nombre));
 
       setEmpleados(empleadosMap);
       setRetiros(Array.isArray(retirosData) ? retirosData : []);
       setTransferencias(Array.isArray(transfData) ? transfData : []);
 
       const cajaArray = Array.isArray(cajasJson.data) ? cajasJson.data : [];
-      const parsed = cajaArray.filter((entry) => entry.fecha_apertura && entry.fecha_cierre);
+      const parsed = cajaArray.filter((e) => e.fecha_apertura && e.fecha_cierre);
       setData(parsed);
       setFiltered(parsed);
 
@@ -197,6 +249,7 @@ const CajaAnalytics = () => {
     fetchData();
   }, []);
 
+  /* -------- Filtros -------- */
   useEffect(() => {
     const result = data.filter((item) => {
       const dateMatch = fecha ? item.fecha_apertura.startsWith(fecha) : true;
@@ -213,24 +266,34 @@ const CajaAnalytics = () => {
   const sumRetirosCaja = (cajaId) =>
     (retiros || [])
       .filter((r) => Number(r.caja_id) === Number(cajaId))
-      .reduce((acc, it) => acc + Number(it.monto || 0), 0);
+      .reduce((acc, it) => acc + safeNum(it.monto), 0);
 
   const resumen = {};
   const detallesPorFecha = {};
 
   filtered.forEach((entry) => {
     const date = entry.fecha_apertura.split(" ")[0];
+
     const retirosCaja = sumRetirosCaja(entry.id);
-    const premiosCaja = Number(entry.premios || 0);
-    const bonosCaja = Number(entry.bonos || 0);
-    const gananciaCaja = retirosCaja - (premiosCaja + bonosCaja);
+    const premiosCaja = safeNum(entry.premios);
+    const bonosCaja = safeNum(entry.bonos);
     const ingresoCaja = retirosCaja;
     const egresoCaja = premiosCaja + bonosCaja;
+    const gananciaCaja = ingresoCaja - egresoCaja;
 
-    if (!resumen[date]) resumen[date] = { ganancia: 0, ingreso: 0, egreso: 0 };
+    // Δ pasivo (si existen columnas)
+    const liIni = safeNum(entry.liability_inicio);
+    const liFin = safeNum(entry.liability_fin);
+    const deltaPasivo = (Number.isFinite(liIni) && Number.isFinite(liFin)) ? (liFin - liIni) : null;
+
+    if (!resumen[date]) resumen[date] = { ganancia: 0, ingreso: 0, egreso: 0, deltaPasivo: 0, tienePasivo: false };
     resumen[date].ganancia += gananciaCaja;
     resumen[date].ingreso += ingresoCaja;
     resumen[date].egreso += egresoCaja;
+    if (deltaPasivo !== null) {
+      resumen[date].deltaPasivo += deltaPasivo;
+      resumen[date].tienePasivo = true;
+    }
 
     if (!detallesPorFecha[date]) detallesPorFecha[date] = [];
     detallesPorFecha[date].push({
@@ -238,6 +301,7 @@ const CajaAnalytics = () => {
       _retirosCaja: retirosCaja,
       _premiosCaja: premiosCaja,
       _bonosCaja: bonosCaja,
+      _deltaPasivo: deltaPasivo,
     });
   });
 
@@ -248,8 +312,8 @@ const CajaAnalytics = () => {
   const allSorted = [...filtered]
     .map((entry) => {
       const retirosCaja = sumRetirosCaja(entry.id);
-      const premiosCaja = Number(entry.premios || 0);
-      const bonosCaja = Number(entry.bonos || 0);
+      const premiosCaja = safeNum(entry.premios);
+      const bonosCaja = safeNum(entry.bonos);
       const ganancia = retirosCaja - (premiosCaja + bonosCaja);
       return { ...entry, ganancia };
     })
@@ -266,26 +330,21 @@ const CajaAnalytics = () => {
   const chartData = useMemo(() => {
     return sortedDates.map(([date]) => {
       const detalles = detallesPorFecha[date] || [];
-      // regla ganancia (retiros - premios - bonos)
-      const retirosDia = detalles.reduce((acc, e) => acc + Number(e._retirosCaja || 0), 0);
-      const premiosDia = detalles.reduce((acc, e) => acc + Number(e._premiosCaja || 0), 0);
-      const bonosDia = detalles.reduce((acc, e) => acc + Number(e._bonosCaja || 0), 0);
-      const ganancia = retirosDia - (premiosDia + bonosDia);
+
+      const retirosDia = detalles.reduce((acc, e) => acc + safeNum(e._retirosCaja), 0);
+      const premiosDia = detalles.reduce((acc, e) => acc + safeNum(e._premiosCaja), 0);
+      const bonosDia   = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
+      const ganancia   = retirosDia - (premiosDia + bonosDia);
 
       // fichas gastadas = max(0, fichas_iniciales - fichas_finales)
       const fichasGastadas = detalles.reduce((acc, e) => {
-        const ini = Number(e.fichas_iniciales || 0);
-        const fin = Number(e.fichas_finales || 0);
+        const ini = safeNum(e.fichas_iniciales);
+        const fin = safeNum(e.fichas_finales);
         const diff = ini - fin;
         return acc + (diff > 0 ? diff : 0);
       }, 0);
 
-      return {
-        dateISO: date,
-        date: formatDate(date),
-        ganancia,
-        fichas: fichasGastadas,
-      };
+      return { dateISO: date, date: formatDate(date), ganancia, fichas: fichasGastadas };
     });
   }, [sortedDates, detallesPorFecha]);
 
@@ -309,7 +368,7 @@ const CajaAnalytics = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowAllMovements(!showAllMovements)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow transition"
+            className="bg-blue-500 hover:bg-blue-6 00 text-white px-4 py-2 rounded shadow transition"
           >
             {showAllMovements ? "Resumen Diario" : "Todos los Movimientos"}
           </button>
@@ -345,9 +404,7 @@ const CajaAnalytics = () => {
         >
           <option value="">Todos los turnos</option>
           {[...new Set(data.map((e) => e.turno))].map((t) => (
-            <option key={t} value={t}>
-              Turno {t}
-            </option>
+            <option key={t} value={t}>Turno {t}</option>
           ))}
         </select>
         <select
@@ -357,9 +414,7 @@ const CajaAnalytics = () => {
         >
           <option value="">Todos los empleados</option>
           {[...new Set(data.map((e) => e.empleado_id))].map((id) => (
-            <option key={id} value={id}>
-              {empleados[id]}
-            </option>
+            <option key={id} value={id}>{empleados[id]}</option>
           ))}
         </select>
         <input
@@ -370,12 +425,7 @@ const CajaAnalytics = () => {
           className="bg-gray-700 text-white border p-2 rounded shadow-sm md:col-span-2"
         />
         <button
-          onClick={() => {
-            setFecha("");
-            setTurno("");
-            setEmpleado("");
-            setSearchTerm("");
-          }}
+          onClick={() => { setFecha(""); setTurno(""); setEmpleado(""); setSearchTerm(""); }}
           className="bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 transition"
         >
           Limpiar filtros
@@ -406,12 +456,7 @@ const CajaAnalytics = () => {
                 stroke="#9ca3af"
                 tickFormatter={(v) => `\$${Number(v).toLocaleString("es-AR")}`}
               />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                stroke="#9ca3af"
-                hide={!showFichasLine}
-              />
+              <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" hide={!showFichasLine} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <ReferenceLine y={0} yAxisId="left" stroke="#6b7280" />
@@ -457,18 +502,20 @@ const CajaAnalytics = () => {
         <div className="space-y-6">
           <h2 className="text-xl font-semibold">Ganancia diaria</h2>
 
-          {sortedDates.map(([date]) => {
+          {sortedDates.map(([date, resume]) => {
             const detalles = detallesPorFecha[date] || [];
 
-            const retirosDia = detalles.reduce((acc, e) => acc + Number(e._retirosCaja || 0), 0);
-            const premiosDia = detalles.reduce((acc, e) => acc + Number(e._premiosCaja || 0), 0);
-            const bonosDia = detalles.reduce((acc, e) => acc + Number(e._bonosCaja || 0), 0);
+            const retirosDia = detalles.reduce((acc, e) => acc + safeNum(e._retirosCaja), 0);
+            const premiosDia = detalles.reduce((acc, e) => acc + safeNum(e._premiosCaja), 0);
+            const bonosDia   = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
 
             const ingreso = retirosDia;
-            const egreso = premiosDia + bonosDia;
+            const egreso  = premiosDia + bonosDia;
             const ganancia = ingreso - egreso;
+
             const claseColor = ganancia >= 0 ? "text-green-400" : "text-red-400";
 
+            // Saldos por billetera (acumulado del día)
             const detalleBilleterasDelDia = (() => {
               const agreg = new Map();
               detalles.forEach((entry) => {
@@ -480,16 +527,17 @@ const CajaAnalytics = () => {
                   else {
                     const acc = agreg.get(k);
                     acc.saldo_inicial += b.saldo_inicial;
-                    acc.transf_in += b.transf_in;
-                    acc.transf_out += b.transf_out;
-                    acc.retiros += b.retiros;
-                    acc.saldo_actual += b.saldo_actual;
+                    acc.transf_in     += b.transf_in;
+                    acc.transf_out    += b.transf_out;
+                    acc.retiros       += b.retiros;
+                    acc.saldo_actual  += b.saldo_actual;
                   }
                 });
               });
               return Array.from(agreg.values());
             })();
 
+            // Faltantes por caja del día (usa snapshot si existe)
             const faltantesDelDia = detalles
               .map((entry) => {
                 const r = calcFaltantesCaja(entry, transferencias, retiros);
@@ -503,6 +551,10 @@ const CajaAnalytics = () => {
               .filter((x) => x.totalFaltante > 0);
 
             const totalFaltanteDia = faltantesDelDia.reduce((acc, it) => acc + it.totalFaltante, 0);
+
+            // Pasivo jugadores (si existe)
+            const tienePasivo = resume?.tienePasivo;
+            const deltaPasivoDia = resume?.deltaPasivo || 0;
 
             return (
               <div key={date} className="bg-gray-800 p-4 rounded-xl shadow-md">
@@ -529,6 +581,15 @@ const CajaAnalytics = () => {
                 >
                   <div className="text-gray-300 mt-2 text-sm">
                     Ingreso: {formatCurrency(ingreso)} — Egreso: {formatCurrency(egreso)}
+                    {tienePasivo && (
+                      <span className="ml-3">
+                        | Δ Pasivo jugadores:{" "}
+                        <span className={deltaPasivoDia >= 0 ? "text-yellow-300" : "text-yellow-300"}>
+                          {deltaPasivoDia >= 0 ? "+ " : "- "}
+                          {formatCurrency(Math.abs(deltaPasivoDia))}
+                        </span>
+                      </span>
+                    )}
                   </div>
 
                   {totalFaltanteDia > 0 && (
@@ -544,16 +605,9 @@ const CajaAnalytics = () => {
                           >
                             <div className="flex justify-between">
                               <div className="text-sm">
-                                <div>
-                                  <span className="text-red-200 font-semibold">Caja:</span> #{f.cajaId}
-                                </div>
-                                <div>
-                                  <span className="text-red-200 font-semibold">Empleado:</span> {f.empleado}
-                                </div>
-                                <div>
-                                  <span className="text-red-200 font-semibold">Cierre:</span>{" "}
-                                  {formatDateTime(f.fechaCierre)}
-                                </div>
+                                <div><span className="text-red-200 font-semibold">Caja:</span> #{f.cajaId}</div>
+                                <div><span className="text-red-200 font-semibold">Empleado:</span> {f.empleado}</div>
+                                <div><span className="text-red-200 font-semibold">Cierre:</span> {formatDateTime(f.fechaCierre)}</div>
                               </div>
                               <div className="text-right text-red-300 font-bold">
                                 Faltante: {formatCurrency(f.totalFaltante)}
@@ -574,7 +628,7 @@ const CajaAnalytics = () => {
                                 </thead>
                                 <tbody>
                                   {f.porBilletera
-                                    .filter((b) => Number(b.diferencia || 0) !== 0)
+                                    .filter((b) => safeNum(b.diferencia) !== 0)
                                     .map((b, idx) => (
                                       <tr key={idx} className="text-red-100">
                                         <td className="px-2 py-1">{b.servicio}</td>
@@ -624,7 +678,7 @@ const CajaAnalytics = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-700">
                           {detalleBilleterasDelDia.map((b, i) => {
-                            const delta = (b.saldo_actual || 0) - (b.saldo_inicial || 0);
+                            const delta = safeNum(b.saldo_actual) - safeNum(b.saldo_inicial);
                             return (
                               <tr key={i} className="bg-gray-900 hover:bg-gray-800">
                                 <td className="px-3 py-2">{b.servicio}</td>
@@ -638,9 +692,7 @@ const CajaAnalytics = () => {
                                   {formatCurrency(b.saldo_actual)}
                                 </td>
                                 <td
-                                  className={`px-3 py-2 text-right ${
-                                    delta >= 0 ? "text-green-400" : "text-red-400"
-                                  }`}
+                                  className={`px-3 py-2 text-right ${delta >= 0 ? "text-green-400" : "text-red-400"}`}
                                 >
                                   {delta >= 0 ? "+" : ""}
                                   {formatCurrency(delta)}
