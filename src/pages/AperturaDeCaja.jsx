@@ -5,11 +5,12 @@ import { motion } from "framer-motion";
 const AperturaDeCaja = () => {
   const [empleado, setEmpleado] = useState("");
   const [turno, setTurno] = useState("");
-  const [billeterasSeleccionadas, setBilleterasSeleccionadas] = useState([]);
+  const [billeterasSeleccionadas, setBilleterasSeleccionadas] = useState([]); // ids
   const [billeterasDisponibles, setBilleterasDisponibles] = useState([]);
-  const [montos, setMontos] = useState({});
+  const [montos, setMontos] = useState({}); // { [id]: "12345" }
+  const [usoTurno, setUsoTurno] = useState({}); // { [id]: "operativa" | "retiro" }
   const [fichas, setFichas] = useState("");
-  const [saldoJugadoresInicio, setSaldoJugadoresInicio] = useState(""); // NUEVO
+  const [saldoJugadoresInicio, setSaldoJugadoresInicio] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [empleados, setEmpleados] = useState([]);
   const navigate = useNavigate();
@@ -30,11 +31,8 @@ const AperturaDeCaja = () => {
         const res = await fetch("https://gestoradmin.store/gestorcaja.php?recurso=billeteras");
         const data = await res.json();
         const todas = Array.isArray(data) ? data : [];
-        // excluir las de tipo "retiro"
-        const operativas = todas.filter(
-          (b) => String(b.tipo || "operativa").toLowerCase() !== "retiro"
-        );
-        setBilleterasDisponibles(operativas);
+        // ✅ Ya NO filtramos por tipo. El agente elige el uso en esta pantalla.
+        setBilleterasDisponibles(todas);
       } catch (err) {
         console.error("Error al cargar billeteras:", err);
       }
@@ -46,9 +44,15 @@ const AperturaDeCaja = () => {
 
   const toggleBilletera = (billeteraId) => {
     const id = Number(billeteraId);
-    setBilleterasSeleccionadas((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setBilleterasSeleccionadas((prev) => {
+      const ya = prev.includes(id);
+      const next = ya ? prev.filter((x) => x !== id) : [...prev, id];
+      // por defecto, si la seleccionan por primera vez, queda como "operativa"
+      if (!ya && !usoTurno[id]) {
+        setUsoTurno((u) => ({ ...u, [id]: "operativa" }));
+      }
+      return next;
+    });
   };
 
   const handleMontoChange = (billeteraId, value) => {
@@ -56,20 +60,18 @@ const AperturaDeCaja = () => {
   };
 
   const parseEntero = (s) => {
-    // tomamos solo dígitos (vos mostrás miles con puntos)
     const raw = String(s || "").replace(/\./g, "");
     return raw === "" ? 0 : Number(raw);
   };
 
   const enviarAperturaCaja = async () => {
     try {
-      // Validaciones básicas
       if (!empleado) return setMensaje("Seleccioná un agente.");
       if (!turno) return setMensaje("Seleccioná un turno.");
       if (billeterasSeleccionadas.length === 0)
         return setMensaje("Seleccioná al menos una billetera.");
 
-      // billeteras seleccionadas con sus montos iniciales
+      // billeteras seleccionadas con sus montos iniciales + USO del turno
       const billeterasConDatos = billeterasSeleccionadas.map((id) => {
         const b = billeterasDisponibles.find((x) => Number(x.id) === Number(id));
         return {
@@ -78,6 +80,7 @@ const AperturaDeCaja = () => {
           titular: b?.titular || "",
           cbu: b?.cbu || "",
           monto: parseEntero(montos[id] || "0"),
+          uso: (usoTurno[id] === "retiro" ? "retiro" : "operativa"), // 👈 se envía al backend
         };
       });
 
@@ -86,7 +89,6 @@ const AperturaDeCaja = () => {
         turno,
         billeteras: billeterasConDatos,
         fichas: parseEntero(fichas),
-        // *** NUEVO: se envía al backend ***
         saldo_jugadores_inicial: parseEntero(saldoJugadoresInicio),
       };
 
@@ -169,28 +171,54 @@ const AperturaDeCaja = () => {
             </div>
           </div>
 
+          {/* Selección de billeteras */}
           <div className="mb-8">
             <label className="block text-sm mb-2 font-semibold">Seleccionar Billeteras:</label>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-80 overflow-y-auto">
-              {billeterasDisponibles.map((b) => (
-                <motion.div
-                  key={b.id}
-                  whileHover={{ scale: 1.02 }}
-                  onClick={() => toggleBilletera(Number(b.id))}
-                  className={`p-4 rounded-xl cursor-pointer transition-all border text-white ${
-                    billeterasSeleccionadas.includes(Number(b.id))
-                      ? "bg-gradient-to-tr from-purple-700 to-cyan-600 border-white"
-                      : "bg-slate-700 border-slate-600 hover:border-white"
-                  }`}
-                >
-                  <div className="font-semibold">{b.servicio}</div>
-                  <div className="text-sm">{b.titular}</div>
-                  <div className="text-xs mt-1 text-slate-300">{recortarCBU(b.cbu)}</div>
-                </motion.div>
-              ))}
+              {billeterasDisponibles.map((b) => {
+                const id = Number(b.id);
+                const selected = billeterasSeleccionadas.includes(id);
+                return (
+                  <motion.div
+                    key={id}
+                    whileHover={{ scale: 1.02 }}
+                    onClick={() => toggleBilletera(id)}
+                    className={`p-4 rounded-xl cursor-pointer transition-all border text-white ${
+                      selected
+                        ? "bg-gradient-to-tr from-purple-700 to-cyan-600 border-white"
+                        : "bg-slate-700 border-slate-600 hover:border-white"
+                    }`}
+                  >
+                    <div className="font-semibold">{b.servicio}</div>
+                    <div className="text-sm">{b.titular}</div>
+                    <div className="text-xs mt-1 text-slate-300">{recortarCBU(b.cbu)}</div>
+
+                    {/* Selector de uso SOLO cuando está seleccionada */}
+                    {selected && (
+                      <div
+                        className="mt-3"
+                        onClick={(e) => e.stopPropagation()} // evita des-seleccionar al abrir el select
+                      >
+                        <label className="block text-xs mb-1">Uso en este turno</label>
+                        <select
+                          value={usoTurno[id] || "operativa"}
+                          onChange={(e) =>
+                            setUsoTurno((prev) => ({ ...prev, [id]: e.target.value }))
+                          }
+                          className="w-full p-2 rounded-lg bg-black/30 border border-white/30 text-white text-sm"
+                        >
+                          <option value="operativa">Billetera para cobrar</option>
+                          <option value="retiro">Billetera para pagar</option>
+                        </select>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
+          {/* Montos iniciales */}
           {billeterasSeleccionadas.length > 0 && (
             <div className="mb-8">
               <h3 className="text-lg font-bold mb-4">Montos Iniciales</h3>
@@ -201,9 +229,19 @@ const AperturaDeCaja = () => {
                     <div key={id} className="bg-slate-800 border border-slate-600 rounded-xl p-4">
                       <div className="font-semibold">{billeteraInfo?.servicio}</div>
                       <div className="text-sm">{billeteraInfo?.titular}</div>
-                      <div className="text-xs mb-2 text-slate-400">
-                        {recortarCBU(billeteraInfo?.cbu)}
-                      </div>
+                      <div className="text-xs mb-2 text-slate-400">{recortarCBU(billeteraInfo?.cbu)}</div>
+
+                      {/* También podés cambiar el uso aquí si querés */}
+                      <label className="text-xs opacity-80">Uso en este turno</label>
+                      <select
+                        value={usoTurno[id] || "operativa"}
+                        onChange={(e) => setUsoTurno((prev) => ({ ...prev, [id]: e.target.value }))}
+                        className="w-full p-2 mt-1 mb-3 rounded-lg bg-slate-700 border border-slate-500 text-white"
+                      >
+                        <option value="operativa">Billetera para cobrar</option>
+                        <option value="retiro">Billetera para pagar</option>
+                      </select>
+
                       <input
                         type="text"
                         inputMode="numeric"
@@ -218,7 +256,7 @@ const AperturaDeCaja = () => {
                             handleMontoChange(id, rawValue);
                           }
                         }}
-                        className="w-full p-2 mt-2 rounded-lg bg-slate-700 text-white border border-slate-500 focus:outline-none"
+                        className="w-full p-2 rounded-lg bg-slate-700 text-white border border-slate-500 focus:outline-none"
                         placeholder="Monto inicial $"
                       />
                     </div>
@@ -244,7 +282,7 @@ const AperturaDeCaja = () => {
             />
           </div>
 
-          {/* NUEVO: Saldo de jugadores (inicio) */}
+          {/* Saldo de jugadores (inicio) */}
           <div className="mb-8">
             <label className="block text-sm font-medium mb-2">
               Saldo de jugadores (inicio) 💼
