@@ -8,7 +8,8 @@ const AperturaDeCaja = () => {
   const [billeterasSeleccionadas, setBilleterasSeleccionadas] = useState([]);
   const [billeterasDisponibles, setBilleterasDisponibles] = useState([]);
   const [montos, setMontos] = useState({});
-  const [fichas, setFichas] = useState(0);
+  const [fichas, setFichas] = useState("");
+  const [saldoJugadoresInicio, setSaldoJugadoresInicio] = useState(""); // NUEVO
   const [mensaje, setMensaje] = useState("");
   const [empleados, setEmpleados] = useState([]);
   const navigate = useNavigate();
@@ -28,8 +29,8 @@ const AperturaDeCaja = () => {
       try {
         const res = await fetch("https://gestoradmin.store/gestorcaja.php?recurso=billeteras");
         const data = await res.json();
-        // Filtra las de tipo "retiro" (case-insensitive) para que NO aparezcan en la apertura
         const todas = Array.isArray(data) ? data : [];
+        // excluir las de tipo "retiro"
         const operativas = todas.filter(
           (b) => String(b.tipo || "operativa").toLowerCase() !== "retiro"
         );
@@ -44,10 +45,9 @@ const AperturaDeCaja = () => {
   }, []);
 
   const toggleBilletera = (billeteraId) => {
+    const id = Number(billeteraId);
     setBilleterasSeleccionadas((prev) =>
-      prev.includes(billeteraId)
-        ? prev.filter((id) => id !== billeteraId)
-        : [...prev, billeteraId]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
@@ -55,31 +55,29 @@ const AperturaDeCaja = () => {
     setMontos((prev) => ({ ...prev, [billeteraId]: value }));
   };
 
+  const parseEntero = (s) => {
+    // tomamos solo dígitos (vos mostrás miles con puntos)
+    const raw = String(s || "").replace(/\./g, "");
+    return raw === "" ? 0 : Number(raw);
+  };
+
   const enviarAperturaCaja = async () => {
     try {
       // Validaciones básicas
-      if (!empleado) {
-        setMensaje("Seleccioná un agente.");
-        return;
-      }
-      if (!turno) {
-        setMensaje("Seleccioná un turno.");
-        return;
-      }
-      if (billeterasSeleccionadas.length === 0) {
-        setMensaje("Seleccioná al menos una billetera.");
-        return;
-      }
+      if (!empleado) return setMensaje("Seleccioná un agente.");
+      if (!turno) return setMensaje("Seleccioná un turno.");
+      if (billeterasSeleccionadas.length === 0)
+        return setMensaje("Seleccioná al menos una billetera.");
 
-      // Payload de billeteras (id numérico + datos)
+      // billeteras seleccionadas con sus montos iniciales
       const billeterasConDatos = billeterasSeleccionadas.map((id) => {
-        const b = billeterasDisponibles.find((x) => x.id === id);
+        const b = billeterasDisponibles.find((x) => Number(x.id) === Number(id));
         return {
-          id: Number(b?.id) || 0, // <-- aseguramos número
+          id: Number(b?.id) || 0,
           servicio: b?.servicio || "",
           titular: b?.titular || "",
           cbu: b?.cbu || "",
-          monto: parseFloat(montos[id]) || 0,
+          monto: parseEntero(montos[id] || "0"),
         };
       });
 
@@ -87,20 +85,25 @@ const AperturaDeCaja = () => {
         empleado: Number(empleado),
         turno,
         billeteras: billeterasConDatos,
-        fichas: Number(fichas) || 0,
+        fichas: parseEntero(fichas),
+        // *** NUEVO: se envía al backend ***
+        saldo_jugadores_inicial: parseEntero(saldoJugadoresInicio),
       };
 
-      const res = await fetch("https://gestoradmin.store/gestorcaja.php?recurso=apertura-caja", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos),
-      });
+      const res = await fetch(
+        "https://gestoradmin.store/gestorcaja.php?recurso=apertura-caja",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(datos),
+        }
+      );
 
       const text = await res.text();
       let data;
       try {
         data = JSON.parse(text);
-      } catch (e) {
+      } catch {
         throw new Error("Respuesta no válida del servidor: " + text);
       }
 
@@ -173,9 +176,9 @@ const AperturaDeCaja = () => {
                 <motion.div
                   key={b.id}
                   whileHover={{ scale: 1.02 }}
-                  onClick={() => toggleBilletera(b.id)}
+                  onClick={() => toggleBilletera(Number(b.id))}
                   className={`p-4 rounded-xl cursor-pointer transition-all border text-white ${
-                    billeterasSeleccionadas.includes(b.id)
+                    billeterasSeleccionadas.includes(Number(b.id))
                       ? "bg-gradient-to-tr from-purple-700 to-cyan-600 border-white"
                       : "bg-slate-700 border-slate-600 hover:border-white"
                   }`}
@@ -193,12 +196,14 @@ const AperturaDeCaja = () => {
               <h3 className="text-lg font-bold mb-4">Montos Iniciales</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 {billeterasSeleccionadas.map((id) => {
-                  const billeteraInfo = billeterasDisponibles.find((b) => b.id === id);
+                  const billeteraInfo = billeterasDisponibles.find((b) => Number(b.id) === id);
                   return (
                     <div key={id} className="bg-slate-800 border border-slate-600 rounded-xl p-4">
                       <div className="font-semibold">{billeteraInfo?.servicio}</div>
                       <div className="text-sm">{billeteraInfo?.titular}</div>
-                      <div className="text-xs mb-2 text-slate-400">{recortarCBU(billeteraInfo?.cbu)}</div>
+                      <div className="text-xs mb-2 text-slate-400">
+                        {recortarCBU(billeteraInfo?.cbu)}
+                      </div>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -208,7 +213,6 @@ const AperturaDeCaja = () => {
                             : ""
                         }
                         onChange={(e) => {
-                          // Sólo números enteros (si necesitás decimales, se cambia esta lógica)
                           const rawValue = e.target.value.replace(/\./g, "");
                           if (/^\d*$/.test(rawValue)) {
                             handleMontoChange(id, rawValue);
@@ -224,23 +228,45 @@ const AperturaDeCaja = () => {
             </div>
           )}
 
-          <div className="mb-8">
+          {/* Fichas iniciales */}
+          <div className="mb-6">
             <label className="block text-sm font-medium mb-2">Fichas iniciales 🎰</label>
             <input
               type="text"
               inputMode="numeric"
-              value={
-                fichas !== undefined && fichas !== "" ? Number(fichas).toLocaleString("es-AR") : ""
-              }
+              value={fichas !== "" ? Number(fichas).toLocaleString("es-AR") : ""}
               onChange={(e) => {
                 const rawValue = e.target.value.replace(/\./g, "");
-                if (/^\d*$/.test(rawValue)) {
-                  setFichas(rawValue);
-                }
+                if (/^\d*$/.test(rawValue)) setFichas(rawValue);
               }}
               className="w-full p-3 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none"
               placeholder="Ingresar Fichas Iniciales"
             />
+          </div>
+
+          {/* NUEVO: Saldo de jugadores (inicio) */}
+          <div className="mb-8">
+            <label className="block text-sm font-medium mb-2">
+              Saldo de jugadores (inicio) 💼
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={
+                saldoJugadoresInicio !== ""
+                  ? Number(saldoJugadoresInicio).toLocaleString("es-AR")
+                  : ""
+              }
+              onChange={(e) => {
+                const rawValue = e.target.value.replace(/\./g, "");
+                if (/^\d*$/.test(rawValue)) setSaldoJugadoresInicio(rawValue);
+              }}
+              className="w-full p-3 rounded-xl bg-slate-800 border border-slate-600 focus:outline-none"
+              placeholder="Ej: 227.095"
+            />
+            <p className="text-xs text-slate-300 mt-1">
+              Es el total de fichas en posesión de los jugadores (pasivo de la plataforma) al abrir.
+            </p>
           </div>
 
           <motion.button
