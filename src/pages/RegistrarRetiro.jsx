@@ -20,12 +20,33 @@ const RegistroRetiros = ({
   const [tipo, setTipo] = useState(modoSoloRetiro ? "retiro" : "interna"); // 'interna' | 'retiro'
   const [desdeId, setDesdeId] = useState("");
   const [hastaId, setHastaId] = useState("");
-  const [monto, setMonto] = useState("");
+  const [montoRaw, setMontoRaw] = useState(""); // solo dígitos
+  const [montoFocused, setMontoFocused] = useState(false);
 
   const recortarCBU = (cbu = "") => {
     const s = String(cbu || "");
     return s ? `${s.slice(0, 6)}...${s.slice(-4)}` : "";
   };
+
+  // Helpers de formato
+  const formatARS = (n) =>
+    Number(n || 0).toLocaleString("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 2,
+    });
+
+  const formatMilesAR = (digitsStr) => {
+    if (!digitsStr) return "";
+    const cleaned = digitsStr.replace(/^0+(?=\d)/, "");
+    return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const montoDisplay = montoFocused
+    ? formatMilesAR(montoRaw)
+    : montoRaw !== ""
+    ? formatARS(Number(montoRaw))
+    : "";
 
   // para internas, evitamos que el “hasta” sea igual al “desde”
   const billeterasHastaInternas = useMemo(() => {
@@ -40,7 +61,7 @@ const RegistroRetiros = ({
       return;
     }
     // campos
-    if (!desdeId || !monto) {
+    if (!desdeId || !montoRaw) {
       alert("Completá todos los campos.");
       return;
     }
@@ -54,7 +75,7 @@ const RegistroRetiros = ({
         return alert("Elegí la billetera externa destino.");
     }
 
-    const montoNum = parseFloat(String(monto).replace(",", "."));
+    const montoNum = Number(montoRaw);
     if (isNaN(montoNum) || montoNum <= 0) {
       alert("El monto debe ser un número válido mayor a 0.");
       return;
@@ -106,16 +127,14 @@ const RegistroRetiros = ({
         cbu: hastaObj.cbu || "",
         externa: !!hastaObj.externa,
       },
-      monto: Number(montoNum) || 0,
+      monto: montoNum,
     };
 
     if (typeof onGuardarMovimiento === "function") {
       onGuardarMovimiento(payload);
     } else if (payload.tipo === "retiro" && typeof onGuardar === "function") {
-      // compat con CierreCaja actual (sólo retiros)
       onGuardar({ desde: payload.desde, hasta: payload.hasta, monto: payload.monto });
     } else if (payload.tipo === "interna" && typeof onGuardarTransferencia === "function") {
-      // opcional: el padre puede manejar internas aparte
       onGuardarTransferencia({ desde: payload.desde, hasta: payload.hasta, monto: payload.monto });
     } else if (payload.tipo === "interna" && !onGuardarTransferencia) {
       alert(
@@ -128,7 +147,7 @@ const RegistroRetiros = ({
     // reset y cerrar
     setDesdeId("");
     setHastaId("");
-    setMonto("");
+    setMontoRaw("");
     if (!modoSoloRetiro) setTipo("interna");
     onClose?.();
   };
@@ -213,16 +232,26 @@ const RegistroRetiros = ({
           </div>
         )}
 
+        {/* Input Monto */}
         <div className="mb-4">
           <label className="block font-medium mb-1">Monto</label>
-          <input
-            type="number"
-            step="any"
-            className="w-full border p-2 rounded"
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-            placeholder="Ingrese el monto"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              className="w-full border rounded p-2"
+              value={montoDisplay}
+              onFocus={() => setMontoFocused(true)}
+              onBlur={() => setMontoFocused(false)}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "");
+                if (/^\d*$/.test(digits)) {
+                  setMontoRaw(digits);
+                }
+              }}
+              placeholder="0"
+            />
+          </div>
         </div>
 
         <div className="flex justify-between">
