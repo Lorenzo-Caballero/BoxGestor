@@ -22,6 +22,7 @@ const RegistroRetiros = ({
   const [hastaId, setHastaId] = useState("");
   const [montoRaw, setMontoRaw] = useState(""); // solo dígitos
   const [montoFocused, setMontoFocused] = useState(false);
+  const [msg, setMsg] = useState("");
 
   const recortarCBU = (cbu = "") => {
     const s = String(cbu || "");
@@ -57,49 +58,73 @@ const RegistroRetiros = ({
   const pickFrom = (list, id) =>
     list.find((b) => String(b.id) === String(id)) || null;
 
+  const resetCampos = () => {
+    setHastaId("");
+    setMontoRaw("");
+    setMontoFocused(false);
+  };
+
   const handleGuardar = () => {
     if (!visible) return;
     if (!cajaId) {
-      alert("No hay caja abierta.");
+      setMsg("No hay caja abierta.");
       return;
     }
+    setMsg("");
+
     // validaciones
     if (!desdeId || !montoRaw) {
-      alert("Completá todos los campos.");
+      setMsg("Completá todos los campos.");
       return;
     }
+
     if (!modoSoloRetiro) {
-      if (modo === "transferencia" && !hastaId)
-        return alert("Elegí la billetera destino (interna).");
-      if (modo === "retiro" && billeterasExternas.length > 0 && !hastaId)
-        return alert("Elegí la billetera externa destino.");
-    } else {
-      if (billeterasExternas.length > 0 && !hastaId)
-        return alert("Elegí la billetera externa destino.");
+      if (modo === "transferencia" && !hastaId) {
+        setMsg("Elegí la billetera destino (interna).");
+        return;
+      }
+      if (modo === "retiro" && billeterasExternas.length > 0 && !hastaId) {
+        setMsg("Elegí la billetera externa destino.");
+        return;
+      }
+    } else if (billeterasExternas.length > 0 && !hastaId) {
+      setMsg("Elegí la billetera externa destino.");
+      return;
     }
 
     const montoNum = Number(montoRaw);
     if (isNaN(montoNum) || montoNum <= 0) {
-      alert("El monto debe ser un número válido mayor a 0.");
+      setMsg("El monto debe ser un número válido mayor a 0.");
       return;
     }
 
     const desdeObjFull = pickFrom(billeteras, desdeId);
-    if (!desdeObjFull) return alert("Billetera de origen no encontrada.");
+    if (!desdeObjFull) {
+      setMsg("Billetera de origen no encontrada.");
+      return;
+    }
 
     let hastaObjFull;
     const modoFinal = modoSoloRetiro ? "retiro" : modo;
 
     if (modoFinal === "transferencia") {
       hastaObjFull = pickFrom(billeteras, hastaId);
-      if (!hastaObjFull) return alert("Billetera de destino no encontrada.");
-      if (String(hastaObjFull.id) === String(desdeObjFull.id))
-        return alert("En transferencias internas, 'Desde' y 'Hasta' deben ser distintos.");
+      if (!hastaObjFull) {
+        setMsg("Billetera de destino no encontrada.");
+        return;
+      }
+      if (String(hastaObjFull.id) === String(desdeObjFull.id)) {
+        setMsg("En transferencias internas, 'Desde' y 'Hasta' deben ser distintos.");
+        return;
+      }
     } else {
       // RETIRO EXTERNO
       if ((billeterasExternas || []).length > 0) {
         hastaObjFull = pickFrom(billeterasExternas, hastaId);
-        if (!hastaObjFull) return alert("Billetera externa no encontrada.");
+        if (!hastaObjFull) {
+          setMsg("Billetera externa no encontrada.");
+          return;
+        }
       } else {
         // placeholder si no pasaste billeterasExternas
         hastaObjFull = {
@@ -107,6 +132,7 @@ const RegistroRetiros = ({
           servicio: "Retiro (Jefe)",
           titular: "Jefe",
           cbu: "",
+          tipo: "retiro",
         };
       }
     }
@@ -124,7 +150,7 @@ const RegistroRetiros = ({
       servicio: hastaObjFull.servicio || "",
       titular: hastaObjFull.titular || "",
       cbu: hastaObjFull.cbu || "",
-      // marcamos explicitamente retiros
+      // marcamos explícitamente retiros
       tipo: modoFinal === "retiro" ? "retiro" : undefined,
     };
 
@@ -135,33 +161,33 @@ const RegistroRetiros = ({
       monto: montoNum,
     };
 
+    // Callbacks compatibles
     if (typeof onGuardarMovimiento === "function") {
       onGuardarMovimiento(payload);
     } else if (payload.tipo === "retiro" && typeof onGuardar === "function") {
       onGuardar({ desde, hasta, monto: montoNum });
-    } else if (payload.tipo === "transferencia" && typeof onGuardarTransferencia === "function") {
+    } else if (
+      payload.tipo === "transferencia" &&
+      typeof onGuardarTransferencia === "function"
+    ) {
       onGuardarTransferencia({ desde, hasta, monto: montoNum });
     } else if (payload.tipo === "transferencia" && !onGuardarTransferencia) {
-      alert(
-        "Transferencia interna registrada localmente no soportada por el padre. " +
-          "Activá onGuardarMovimiento u onGuardarTransferencia en el componente padre."
+      setMsg(
+        "Transferencia interna registrada localmente no soportada por el padre. Activá onGuardarMovimiento u onGuardarTransferencia en el componente padre."
       );
       return;
     }
 
-    // reset y cerrar
-    setDesdeId("");
-    setHastaId("");
-    setMontoRaw("");
-    if (!modoSoloRetiro) setModo("transferencia");
-    onClose?.();
+    // Mantener modal abierto para cargar varios: limpiar campos y avisar
+    resetCampos();
+    setMsg("✅ Movimiento agregado. Podés cargar otro o cerrar.");
   };
 
   if (!visible) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 w-[460px] shadow-lg">
+      <div className="bg-white rounded-lg p-6 w-[480px] shadow-lg">
         <h2 className="text-xl font-bold mb-4">Registrar Movimiento</h2>
 
         {!modoSoloRetiro && (
@@ -173,6 +199,7 @@ const RegistroRetiros = ({
               onChange={(e) => {
                 setModo(e.target.value);
                 setHastaId("");
+                setMsg("");
               }}
             >
               <option value="transferencia">Transferencia interna</option>
@@ -186,7 +213,10 @@ const RegistroRetiros = ({
           <select
             className="w-full border p-2 rounded"
             value={desdeId}
-            onChange={(e) => setDesdeId(e.target.value)}
+            onChange={(e) => {
+              setDesdeId(e.target.value);
+              setMsg("");
+            }}
           >
             <option value="">Seleccionar billetera</option>
             {(billeteras || []).map((b) => (
@@ -204,7 +234,10 @@ const RegistroRetiros = ({
               <select
                 className="w-full border p-2 rounded"
                 value={hastaId}
-                onChange={(e) => setHastaId(e.target.value)}
+                onChange={(e) => {
+                  setHastaId(e.target.value);
+                  setMsg("");
+                }}
               >
                 <option value="">Seleccionar billetera externa</option>
                 {billeterasExternas.map((b) => (
@@ -225,7 +258,10 @@ const RegistroRetiros = ({
             <select
               className="w-full border p-2 rounded"
               value={hastaId}
-              onChange={(e) => setHastaId(e.target.value)}
+              onChange={(e) => {
+                setHastaId(e.target.value);
+                setMsg("");
+              }}
             >
               <option value="">Seleccionar billetera</option>
               {billeterasHastaInternas.map((b) => (
@@ -238,9 +274,12 @@ const RegistroRetiros = ({
         )}
 
         {/* Input Monto */}
-        <div className="mb-4">
+        <div className="mb-2">
           <label className="block font-medium mb-1">Monto</label>
           <div className="relative">
+            {!montoFocused && montoRaw !== "" && (
+              <span className="absolute left-3 top-2 text-gray-400">$</span>
+            )}
             <input
               type="text"
               inputMode="numeric"
@@ -257,9 +296,12 @@ const RegistroRetiros = ({
           </div>
         </div>
 
-        <div className="flex justify-between">
+        {/* Mensajes */}
+        {msg && <p className="mt-1 mb-2 text-sm text-gray-700">{msg}</p>}
+
+        <div className="flex justify-between mt-3">
           <button className="bg-gray-300 px-4 py-2 rounded" onClick={onClose}>
-            Cancelar
+            Cerrar
           </button>
           <button
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

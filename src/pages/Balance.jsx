@@ -35,10 +35,10 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 2,
   })}`;
 
-const safeNum = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
+const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 /* =========================
-   Helpers para billeteras
+   Helpers para billeteras (uso local para faltantes/agrupados)
    ========================= */
 const walletKey = (w = {}) =>
   `${w?.servicio || ""}|${w?.cbu || ""}|${w?.titular || ""}`;
@@ -83,9 +83,23 @@ const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
       const kh = walletKey(h);
 
       if (!map.has(kd))
-        map.set(kd, { ...d, saldo_inicial: 0, saldo_actual: 0, transf_in: 0, transf_out: 0, retiros: 0 });
+        map.set(kd, {
+          ...d,
+          saldo_inicial: 0,
+          saldo_actual: 0,
+          transf_in: 0,
+          transf_out: 0,
+          retiros: 0,
+        });
       if (!map.has(kh))
-        map.set(kh, { ...h, saldo_inicial: 0, saldo_actual: 0, transf_in: 0, transf_out: 0, retiros: 0 });
+        map.set(kh, {
+          ...h,
+          saldo_inicial: 0,
+          saldo_actual: 0,
+          transf_in: 0,
+          transf_out: 0,
+          retiros: 0,
+        });
 
       map.get(kd).saldo_actual -= m;
       map.get(kd).transf_out += m;
@@ -100,7 +114,14 @@ const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
       const d = r.desde_billetera || {};
       const kd = walletKey(d);
       if (!map.has(kd))
-        map.set(kd, { ...d, saldo_inicial: 0, saldo_actual: 0, transf_in: 0, transf_out: 0, retiros: 0 });
+        map.set(kd, {
+          ...d,
+          saldo_inicial: 0,
+          saldo_actual: 0,
+          transf_in: 0,
+          transf_out: 0,
+          retiros: 0,
+        });
       map.get(kd).saldo_actual -= m;
       map.get(kd).retiros += m;
     });
@@ -110,8 +131,7 @@ const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
 
 /* =========================
    Faltantes por caja
-   - Si la caja trae snapshot (descuadre_detalle / descuadre_total) lo usamos.
-   - Si no, lo calculamos con transferencias + retiros.
+   - Usa snapshot del backend si existe.
    ========================= */
 const calcFaltantesCajaFromSnapshot = (entry) => {
   try {
@@ -188,6 +208,149 @@ const calcFaltantesCaja = (entry, transferencias, retiros) => {
   if (fromSnap) return fromSnap;
   return calcFaltantesCajaRecompute(entry, transferencias, retiros);
 };
+
+/* ===============================================================
+   NUEVO: componente que trae el pack del backend para una caja
+   =============================================================== */
+function CajaDetalleServidor({ cajaId }) {
+  const [loading, setLoading] = useState(true);
+  const [pack, setPack] = useState(null);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      try {
+        setLoading(true);
+        setErr("");
+        const res = await fetch(
+          `https://gestoradmin.store/gestorcaja.php?recurso=balance&caja_id=${cajaId}`
+        );
+        const txt = await res.text();
+        const data = JSON.parse(txt);
+        if (!res.ok || data?.error) {
+          throw new Error(data?.error || "Error al obtener balance");
+        }
+        if (alive) setPack(data);
+      } catch (e) {
+        if (alive) setErr(String(e.message || e));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      alive = false;
+    };
+  }, [cajaId]);
+
+  if (loading) return <div className="text-sm text-gray-400 mt-2">Cargando resumen de caja #{cajaId}…</div>;
+  if (err) return <div className="text-sm text-red-400 mt-2">Error: {err}</div>;
+  if (!pack) return null;
+
+  const resumen = pack.resumen?.totales || pack.resumen || {};
+  const filas = pack.billeteras || [];
+  const fc = (n) =>
+    `$${Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  return (
+    <div className="mt-4 space-y-4">
+      {/* Totales del turno */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Retiros reales (T)</div>
+          <div className="font-bold">{fc(resumen.T)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Depósitos (D)</div>
+          <div className="font-bold">{fc(resumen.depositos)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Premios</div>
+          <div className="font-bold">{fc(resumen.premios)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Bonos</div>
+          <div className="font-bold">{fc(resumen.bonos)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Δ Pasivo (ΔL)</div>
+          <div className="font-bold">{fc(resumen.deltaL)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Ganancia (T − (P+Bo))</div>
+          <div className={`font-bold ${Number(resumen.ganancia) >= 0 ? "text-green-400" : "text-red-400"}`}>
+            {fc(resumen.ganancia)}
+          </div>
+        </div>
+      </div>
+
+      {/* House Win & Cash Flow */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">House Win</div>
+          <div className="font-bold">{fc(resumen.houseWin)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Cash Flow (R − P)</div>
+          <div className="font-bold">{fc(resumen.cashFlow)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Δ Billeteras (ΔB)</div>
+          <div className="font-bold">{fc(resumen.deltaB)}</div>
+        </div>
+        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
+          <div className="text-gray-400">Consumo fichas (C)</div>
+          <div className="font-bold">{fc(resumen.C)}</div>
+        </div>
+      </div>
+
+      {/* Saldos por billetera (del servidor) */}
+      <div className="overflow-x-auto rounded-lg border border-gray-700">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-800 text-gray-300">
+            <tr>
+              <th className="text-left px-3 py-2">Servicio</th>
+              <th className="text-left px-3 py-2">Titular</th>
+              <th className="text-left px-3 py-2">CBU</th>
+              <th className="text-right px-3 py-2">Inicial</th>
+              <th className="text-right px-3 py-2">Transf. (+)</th>
+              <th className="text-right px-3 py-2">Transf. (−)</th>
+              <th className="text-right px-3 py-2">Retiros (→ jefe)</th>
+              <th className="text-right px-3 py-2">Ext. Ingreso</th>
+              <th className="text-right px-3 py-2">Esperado</th>
+              <th className="text-right px-3 py-2">Final</th>
+              <th className="text-right px-3 py-2">Δ</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-700">
+            {filas.map((b, i) => {
+              const delta = Number(b.diferencia || 0);
+              return (
+                <tr key={i} className="bg-gray-900 hover:bg-gray-800">
+                  <td className="px-3 py-2">{b.servicio}</td>
+                  <td className="px-3 py-2">{b.titular}</td>
+                  <td className="px-3 py-2">{b.cbu}</td>
+                  <td className="px-3 py-2 text-right">{fc(b.inicial)}</td>
+                  <td className="px-3 py-2 text-right">{fc(b.transf_in)}</td>
+                  <td className="px-3 py-2 text-right">{fc(b.transf_out)}</td>
+                  <td className="px-3 py-2 text-right">{fc(b.retiros_al_jefe)}</td>
+                  <td className="px-3 py-2 text-right">{fc(b.extin)}</td>
+                  <td className="px-3 py-2 text-right">{fc(b.esperado)}</td>
+                  <td className="px-3 py-2 text-right font-semibold">{fc(b.final)}</td>
+                  <td className={`px-3 py-2 text-right ${delta >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {delta >= 0 ? "+" : ""}
+                    {fc(delta)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 /* =========================
    Componente principal
@@ -284,9 +447,10 @@ const CajaAnalytics = () => {
     // Δ pasivo (si existen columnas)
     const liIni = safeNum(entry.liability_inicio);
     const liFin = safeNum(entry.liability_fin);
-    const deltaPasivo = (Number.isFinite(liIni) && Number.isFinite(liFin)) ? (liFin - liIni) : null;
+    const deltaPasivo = Number.isFinite(liIni) && Number.isFinite(liFin) ? liFin - liIni : null;
 
-    if (!resumen[date]) resumen[date] = { ganancia: 0, ingreso: 0, egreso: 0, deltaPasivo: 0, tienePasivo: false };
+    if (!resumen[date])
+      resumen[date] = { ganancia: 0, ingreso: 0, egreso: 0, deltaPasivo: 0, tienePasivo: false };
     resumen[date].ganancia += gananciaCaja;
     resumen[date].ingreso += ingresoCaja;
     resumen[date].egreso += egresoCaja;
@@ -333,8 +497,8 @@ const CajaAnalytics = () => {
 
       const retirosDia = detalles.reduce((acc, e) => acc + safeNum(e._retirosCaja), 0);
       const premiosDia = detalles.reduce((acc, e) => acc + safeNum(e._premiosCaja), 0);
-      const bonosDia   = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
-      const ganancia   = retirosDia - (premiosDia + bonosDia);
+      const bonosDia = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
+      const ganancia = retirosDia - (premiosDia + bonosDia);
 
       // fichas gastadas = max(0, fichas_iniciales - fichas_finales)
       const fichasGastadas = detalles.reduce((acc, e) => {
@@ -355,8 +519,17 @@ const CajaAnalytics = () => {
     return (
       <div className="rounded-lg bg-slate-900/90 border border-slate-700 p-3 text-sm">
         <div className="font-semibold mb-1">{label}</div>
-        {g && <div>Ganancia: <span className="font-bold">{formatCurrency(g.value)}</span></div>}
-        {f && <div>Fichas gastadas: <span className="font-bold">{Number(f.value).toLocaleString("es-AR")}</span></div>}
+        {g && (
+          <div>
+            Ganancia: <span className="font-bold">{formatCurrency(g.value)}</span>
+          </div>
+        )}
+        {f && (
+          <div>
+            Fichas gastadas:{" "}
+            <span className="font-bold">{Number(f.value).toLocaleString("es-AR")}</span>
+          </div>
+        )}
       </div>
     );
   };
@@ -368,7 +541,7 @@ const CajaAnalytics = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowAllMovements(!showAllMovements)}
-            className="bg-blue-500 hover:bg-blue-6 00 text-white px-4 py-2 rounded shadow transition"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow transition"
           >
             {showAllMovements ? "Resumen Diario" : "Todos los Movimientos"}
           </button>
@@ -404,7 +577,9 @@ const CajaAnalytics = () => {
         >
           <option value="">Todos los turnos</option>
           {[...new Set(data.map((e) => e.turno))].map((t) => (
-            <option key={t} value={t}>Turno {t}</option>
+            <option key={t} value={t}>
+              Turno {t}
+            </option>
           ))}
         </select>
         <select
@@ -414,7 +589,9 @@ const CajaAnalytics = () => {
         >
           <option value="">Todos los empleados</option>
           {[...new Set(data.map((e) => e.empleado_id))].map((id) => (
-            <option key={id} value={id}>{empleados[id]}</option>
+            <option key={id} value={id}>
+              {empleados[id]}
+            </option>
           ))}
         </select>
         <input
@@ -425,7 +602,12 @@ const CajaAnalytics = () => {
           className="bg-gray-700 text-white border p-2 rounded shadow-sm md:col-span-2"
         />
         <button
-          onClick={() => { setFecha(""); setTurno(""); setEmpleado(""); setSearchTerm(""); }}
+          onClick={() => {
+            setFecha("");
+            setTurno("");
+            setEmpleado("");
+            setSearchTerm("");
+          }}
           className="bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 transition"
         >
           Limpiar filtros
@@ -489,7 +671,8 @@ const CajaAnalytics = () => {
           </ResponsiveContainer>
         </div>
         <div className="text-xs text-gray-400 mt-2">
-          * Ganancia = Retiros − (Premios + Bonos). Las fichas se muestran como unidades (eje derecho).
+          * Ganancia = Retiros − (Premios + Bonos). Las fichas se muestran como unidades (eje
+          derecho).
         </div>
       </div>
 
@@ -507,35 +690,13 @@ const CajaAnalytics = () => {
 
             const retirosDia = detalles.reduce((acc, e) => acc + safeNum(e._retirosCaja), 0);
             const premiosDia = detalles.reduce((acc, e) => acc + safeNum(e._premiosCaja), 0);
-            const bonosDia   = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
+            const bonosDia = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
 
             const ingreso = retirosDia;
-            const egreso  = premiosDia + bonosDia;
+            const egreso = premiosDia + bonosDia;
             const ganancia = ingreso - egreso;
 
             const claseColor = ganancia >= 0 ? "text-green-400" : "text-red-400";
-
-            // Saldos por billetera (acumulado del día)
-            const detalleBilleterasDelDia = (() => {
-              const agreg = new Map();
-              detalles.forEach((entry) => {
-                const base = buildWalletMapFromCaja(entry);
-                const arr = applyMovimientosCaja(base, entry.id, transferencias, retiros);
-                arr.forEach((b) => {
-                  const k = walletKey(b);
-                  if (!agreg.has(k)) agreg.set(k, { ...b });
-                  else {
-                    const acc = agreg.get(k);
-                    acc.saldo_inicial += b.saldo_inicial;
-                    acc.transf_in     += b.transf_in;
-                    acc.transf_out    += b.transf_out;
-                    acc.retiros       += b.retiros;
-                    acc.saldo_actual  += b.saldo_actual;
-                  }
-                });
-              });
-              return Array.from(agreg.values());
-            })();
 
             // Faltantes por caja del día (usa snapshot si existe)
             const faltantesDelDia = detalles
@@ -550,7 +711,10 @@ const CajaAnalytics = () => {
               })
               .filter((x) => x.totalFaltante > 0);
 
-            const totalFaltanteDia = faltantesDelDia.reduce((acc, it) => acc + it.totalFaltante, 0);
+            const totalFaltanteDia = faltantesDelDia.reduce(
+              (acc, it) => acc + it.totalFaltante,
+              0
+            );
 
             // Pasivo jugadores (si existe)
             const tienePasivo = resume?.tienePasivo;
@@ -584,7 +748,7 @@ const CajaAnalytics = () => {
                     {tienePasivo && (
                       <span className="ml-3">
                         | Δ Pasivo jugadores:{" "}
-                        <span className={deltaPasivoDia >= 0 ? "text-yellow-300" : "text-yellow-300"}>
+                        <span className="text-yellow-300">
                           {deltaPasivoDia >= 0 ? "+ " : "- "}
                           {formatCurrency(Math.abs(deltaPasivoDia))}
                         </span>
@@ -605,9 +769,17 @@ const CajaAnalytics = () => {
                           >
                             <div className="flex justify-between">
                               <div className="text-sm">
-                                <div><span className="text-red-200 font-semibold">Caja:</span> #{f.cajaId}</div>
-                                <div><span className="text-red-200 font-semibold">Empleado:</span> {f.empleado}</div>
-                                <div><span className="text-red-200 font-semibold">Cierre:</span> {formatDateTime(f.fechaCierre)}</div>
+                                <div>
+                                  <span className="text-red-200 font-semibold">Caja:</span> #{f.cajaId}
+                                </div>
+                                <div>
+                                  <span className="text-red-200 font-semibold">Empleado:</span>{" "}
+                                  {f.empleado}
+                                </div>
+                                <div>
+                                  <span className="text-red-200 font-semibold">Cierre:</span>{" "}
+                                  {formatDateTime(f.fechaCierre)}
+                                </div>
                               </div>
                               <div className="text-right text-red-300 font-bold">
                                 Faltante: {formatCurrency(f.totalFaltante)}
@@ -634,8 +806,12 @@ const CajaAnalytics = () => {
                                         <td className="px-2 py-1">{b.servicio}</td>
                                         <td className="px-2 py-1">{b.titular}</td>
                                         <td className="px-2 py-1">{b.cbu}</td>
-                                        <td className="px-2 py-1 text-right">{formatCurrency(b.esperado)}</td>
-                                        <td className="px-2 py-1 text-right">{formatCurrency(b.final)}</td>
+                                        <td className="px-2 py-1 text-right">
+                                          {formatCurrency(b.esperado)}
+                                        </td>
+                                        <td className="px-2 py-1 text-right">
+                                          {formatCurrency(b.final)}
+                                        </td>
                                         <td
                                           className={`px-2 py-1 text-right ${
                                             b.diferencia < 0 ? "text-red-400" : "text-green-400"
@@ -655,54 +831,19 @@ const CajaAnalytics = () => {
                     </div>
                   )}
 
+                  {/* Movimientos del día */}
                   <MovimientosTable entries={detalles} empleados={empleados} />
 
-                  <div className="mt-4">
-                    <h3 className="text-sm font-semibold text-gray-200 mb-2">
-                      Saldos por billetera (con transferencias internas y retiros)
-                    </h3>
-                    <div className="overflow-x-auto rounded-lg border border-gray-700">
-                      <table className="min-w-full text-sm">
-                        <thead className="bg-gray-800 text-gray-300">
-                          <tr>
-                            <th className="text-left px-3 py-2">Servicio</th>
-                            <th className="text-left px-3 py-2">Titular</th>
-                            <th className="text-left px-3 py-2">CBU</th>
-                            <th className="text-right px-3 py-2">Inicial</th>
-                            <th className="text-right px-3 py-2">Transf. (+)</th>
-                            <th className="text-right px-3 py-2">Transf. (−)</th>
-                            <th className="text-right px-3 py-2">Retiros (−)</th>
-                            <th className="text-right px-3 py-2">Actual</th>
-                            <th className="text-right px-3 py-2">Δ</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-700">
-                          {detalleBilleterasDelDia.map((b, i) => {
-                            const delta = safeNum(b.saldo_actual) - safeNum(b.saldo_inicial);
-                            return (
-                              <tr key={i} className="bg-gray-900 hover:bg-gray-800">
-                                <td className="px-3 py-2">{b.servicio}</td>
-                                <td className="px-3 py-2">{b.titular}</td>
-                                <td className="px-3 py-2">{b.cbu}</td>
-                                <td className="px-3 py-2 text-right">{formatCurrency(b.saldo_inicial)}</td>
-                                <td className="px-3 py-2 text-right">{formatCurrency(b.transf_in)}</td>
-                                <td className="px-3 py-2 text-right">{formatCurrency(b.transf_out)}</td>
-                                <td className="px-3 py-2 text-right">{formatCurrency(b.retiros)}</td>
-                                <td className="px-3 py-2 text-right font-semibold">
-                                  {formatCurrency(b.saldo_actual)}
-                                </td>
-                                <td
-                                  className={`px-3 py-2 text-right ${delta >= 0 ? "text-green-400" : "text-red-400"}`}
-                                >
-                                  {delta >= 0 ? "+" : ""}
-                                  {formatCurrency(delta)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                  {/* NUEVO: detalle por caja desde el servidor */}
+                  <div className="mt-4 space-y-6">
+                    {detalles.map((entry) => (
+                      <div key={`det-${entry.id}`} className="pt-2 border-t border-gray-700">
+                        <h3 className="text-sm font-semibold text-gray-200 mb-2">
+                          Caja #{entry.id} — {empleados[entry.empleado_id] || `ID ${entry.empleado_id}`}
+                        </h3>
+                        <CajaDetalleServidor cajaId={entry.id} />
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
               </div>
@@ -765,13 +906,15 @@ const CajaAnalytics = () => {
                           Desde Billetera
                         </h4>
                         <p className="text-white">
-                          <span className="font-semibold">Servicio:</span> {r.desde_billetera?.servicio}
+                          <span className="font-semibold">Servicio:</span>{" "}
+                          {r.desde_billetera?.servicio}
                         </p>
                         <p className="text-white">
                           <span className="font-semibold">CBU:</span> {r.desde_billetera?.cbu}
                         </p>
                         <p className="text-white">
-                          <span className="font-semibold">Titular:</span> {r.desde_billetera?.titular}
+                          <span className="font-semibold">Titular:</span>{" "}
+                          {r.desde_billetera?.titular}
                         </p>
                       </div>
 
@@ -780,13 +923,15 @@ const CajaAnalytics = () => {
                           Hasta Billetera
                         </h4>
                         <p className="text-white">
-                          <span className="font-semibold">Servicio:</span> {r.hasta_billetera?.servicio}
+                          <span className="font-semibold">Servicio:</span>{" "}
+                          {r.hasta_billetera?.servicio}
                         </p>
                         <p className="text-white">
                           <span className="font-semibold">CBU:</span> {r.hasta_billetera?.cbu}
                         </p>
                         <p className="text-white">
-                          <span className="font-semibold">Titular:</span> {r.hasta_billetera?.titular}
+                          <span className="font-semibold">Titular:</span>{" "}
+                          {r.hasta_billetera?.titular}
                         </p>
                       </div>
                     </div>

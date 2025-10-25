@@ -71,6 +71,8 @@ const AperturaDeCaja = () => {
       if (billeterasSeleccionadas.length === 0)
         return setMensaje("Seleccioná al menos una billetera.");
 
+      if (!window.confirm("¿Confirmás abrir la caja con estos datos?")) return;
+
       // billeteras seleccionadas con sus montos iniciales + USO del turno
       const billeterasConDatos = billeterasSeleccionadas.map((id) => {
         const b = billeterasDisponibles.find((x) => Number(x.id) === Number(id));
@@ -80,7 +82,7 @@ const AperturaDeCaja = () => {
           titular: b?.titular || "",
           cbu: b?.cbu || "",
           monto: parseEntero(montos[id] || "0"),
-          uso: (usoTurno[id] === "retiro" ? "retiro" : "operativa"), // 👈 se envía al backend
+          uso: usoTurno[id] === "retiro" ? "retiro" : "operativa", // 👈 se envía al backend
         };
       });
 
@@ -88,7 +90,7 @@ const AperturaDeCaja = () => {
         empleado: Number(empleado),
         turno,
         billeteras: billeterasConDatos,
-        fichas: parseEntero(fichas),
+        fichas_iniciales: parseEntero(fichas),
         saldo_jugadores_inicial: parseEntero(saldoJugadoresInicio),
       };
 
@@ -231,7 +233,6 @@ const AperturaDeCaja = () => {
                       <div className="text-sm">{billeteraInfo?.titular}</div>
                       <div className="text-xs mb-2 text-slate-400">{recortarCBU(billeteraInfo?.cbu)}</div>
 
-                      {/* También podés cambiar el uso aquí si querés */}
                       <label className="text-xs opacity-80">Uso en este turno</label>
                       <select
                         value={usoTurno[id] || "operativa"}
