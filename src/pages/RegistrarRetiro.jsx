@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const RegistroRetiros = ({
   visible,
@@ -23,6 +23,14 @@ const RegistroRetiros = ({
   const [montoRaw, setMontoRaw] = useState(""); // solo dígitos
   const [montoFocused, setMontoFocused] = useState(false);
   const [msg, setMsg] = useState("");
+
+  // Cerrar con ESC
+  useEffect(() => {
+    if (!visible) return;
+    const onKey = (e) => e.key === "Escape" && onClose?.();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [visible, onClose]);
 
   const recortarCBU = (cbu = "") => {
     const s = String(cbu || "");
@@ -186,15 +194,24 @@ const RegistroRetiros = ({
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 w-[480px] shadow-lg">
-        <h2 className="text-xl font-bold mb-4">Registrar Movimiento</h2>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={(e) => {
+        // cerrar si clic fuera del panel
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div className="w-[520px] max-w-[92vw] rounded-2xl border border-[#2f3336] bg-[#1e1f23] p-6 text-[#e6e6e6] shadow-2xl">
+        <h2 className="text-[20px] md:text-[22px] font-semibold tracking-tight text-[#e8e9ea] mb-4">
+          Registrar Movimiento
+        </h2>
 
+        {/* Tipo */}
         {!modoSoloRetiro && (
-          <div className="mb-3">
-            <label className="block font-medium mb-1">Tipo</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">Tipo</label>
             <select
-              className="w-full border p-2 rounded"
+              className="w-full p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
               value={modo}
               onChange={(e) => {
                 setModo(e.target.value);
@@ -208,10 +225,11 @@ const RegistroRetiros = ({
           </div>
         )}
 
-        <div className="mb-3">
-          <label className="block font-medium mb-1">Desde</label>
+        {/* Desde */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">Desde</label>
           <select
-            className="w-full border p-2 rounded"
+            className="w-full p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
             value={desdeId}
             onChange={(e) => {
               setDesdeId(e.target.value);
@@ -227,12 +245,13 @@ const RegistroRetiros = ({
           </select>
         </div>
 
-        {(modoSoloRetiro || modo === "retiro") ? (
-          <div className="mb-3">
-            <label className="block font-medium mb-1">Hasta (externa)</label>
+        {/* Hasta */}
+        {modoSoloRetiro || modo === "retiro" ? (
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">Hasta (externa)</label>
             {billeterasExternas.length > 0 ? (
               <select
-                className="w-full border p-2 rounded"
+                className="w-full p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
                 value={hastaId}
                 onChange={(e) => {
                   setHastaId(e.target.value);
@@ -247,16 +266,16 @@ const RegistroRetiros = ({
                 ))}
               </select>
             ) : (
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-[#9da3ab]">
                 No configuraste billeteras externas; se usará “Retiro (Jefe)” como destino.
               </div>
             )}
           </div>
         ) : (
-          <div className="mb-3">
-            <label className="block font-medium mb-1">Hasta (interna)</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">Hasta (interna)</label>
             <select
-              className="w-full border p-2 rounded"
+              className="w-full p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
               value={hastaId}
               onChange={(e) => {
                 setHastaId(e.target.value);
@@ -273,17 +292,17 @@ const RegistroRetiros = ({
           </div>
         )}
 
-        {/* Input Monto */}
+        {/* Monto */}
         <div className="mb-2">
-          <label className="block font-medium mb-1">Monto</label>
+          <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">Monto</label>
           <div className="relative">
             {!montoFocused && montoRaw !== "" && (
-              <span className="absolute left-3 top-2 text-gray-400">$</span>
+              <span className="absolute left-3 top-2.5 text-[#9da3ab]">$</span>
             )}
             <input
               type="text"
               inputMode="numeric"
-              className="w-full border rounded p-2"
+              className="w-full p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
               value={montoDisplay}
               onFocus={() => setMontoFocused(true)}
               onBlur={() => setMontoFocused(false)}
@@ -297,14 +316,26 @@ const RegistroRetiros = ({
         </div>
 
         {/* Mensajes */}
-        {msg && <p className="mt-1 mb-2 text-sm text-gray-700">{msg}</p>}
+        {!!msg && (
+          <p
+            className={`mt-2 mb-3 text-sm ${
+              msg.startsWith("✅") ? "text-emerald-400" : "text-red-400"
+            }`}
+          >
+            {msg}
+          </p>
+        )}
 
-        <div className="flex justify-between mt-3">
-          <button className="bg-gray-300 px-4 py-2 rounded" onClick={onClose}>
+        {/* Acciones */}
+        <div className="flex justify-between mt-3 gap-3">
+          <button
+            className="w-32 py-2 rounded-2xl font-semibold bg-transparent border border-[#3a3f45] hover:bg-[#2a2d33] transition-colors"
+            onClick={onClose}
+          >
             Cerrar
           </button>
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="w-32 py-2 rounded-2xl font-semibold bg-[#2f3336] hover:bg-[#3a3f44] transition-colors"
             onClick={handleGuardar}
           >
             Guardar

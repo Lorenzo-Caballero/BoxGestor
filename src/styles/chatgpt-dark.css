@@ -1,0 +1,144 @@
+:root {
+  --cgpt-bg: #0d1117;
+  --cgpt-panel: #161b22;
+  --cgpt-text: #e6edf3;
+  --cgpt-accent: #00a67e;
+  --cgpt-card: #1c2128;
+  --cgpt-border: #30363d;
+}
+
+body {
+  background-color: var(--cgpt-bg);
+  color: var(--cgpt-text);
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+/* CONTENEDOR GENERAL */
+.cgpt-shell {
+  min-height: 100vh;
+  background: var(--cgpt-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+/* ENCABEZADO */
+.cgpt-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.cgpt-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--cgpt-text);
+}
+.cgpt-sub {
+  font-size: 0.9rem;
+  color: #9da5b4;
+}
+.badge {
+  background: var(--cgpt-accent);
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+/* PANEL CENTRAL */
+.cgpt-panel {
+  background: var(--cgpt-panel);
+  border: 1px solid var(--cgpt-border);
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 900px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* FILAS / GRILLAS */
+.cgpt-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* LABELS / INPUTS / SELECTS */
+.cgpt-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #9da5b4;
+  margin-bottom: 0.4rem;
+}
+.cgpt-input,
+.cgpt-select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  background: var(--cgpt-card);
+  border: 1px solid var(--cgpt-border);
+  color: var(--cgpt-text);
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+.cgpt-input:focus,
+.cgpt-select:focus {
+  border-color: var(--cgpt-accent);
+  outline: none;
+}
+
+/* TARJETAS DE BILLETERAS */
+.cgpt-wallets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 0.8rem;
+}
+.cgpt-card {
+  background: var(--cgpt-card);
+  border: 1px solid var(--cgpt-border);
+  border-radius: 0.8rem;
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.cgpt-card:hover {
+  border-color: var(--cgpt-accent);
+}
+.cgpt-card.is-selected {
+  background: linear-gradient(145deg, #00a67e, #006b55);
+  color: white;
+  border-color: #00a67e;
+}
+
+/* BOTÓN PRINCIPAL */
+.cgpt-primary {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 0.7rem;
+  background: var(--cgpt-accent);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.cgpt-primary:hover {
+  background: #02b98e;
+}
+
+/* DIVISORES / AYUDA */
+.hr {
+  border-bottom: 1px solid var(--cgpt-border);
+  margin: 1rem 0;
+}
+.cgpt-hint {
+  font-size: 0.8rem;
+  color: #9da5b4;
+  margin-top: 0.3rem;
+}

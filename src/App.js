@@ -28,10 +28,6 @@ import HomeRedirect from "./components/auth/HomeRedirect";
 //import Games from "./components/home/Games";
 import { AuthProvider } from "./components/context/AuthContext";
 
-
-
-
-
 const App = () => {
   const dispatch = useDispatch();
   const location = useLocation();
@@ -41,7 +37,6 @@ const App = () => {
   useEffect(() => {
     dispatch(getProducts());
   }, [dispatch]);
-
 
   return (
     <>

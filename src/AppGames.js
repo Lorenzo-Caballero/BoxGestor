@@ -4,6 +4,7 @@ import AperturaDeCaja from "./pages/AperturaDeCaja";
 import CierreDeCaja from "./pages/CierreDeCaja";
 import Balance from "./pages/Balance";
 import Billeteras from "./pages/Billeteras";
+import './styles/chatgpt-dark.css'; // 👈 Tema oscuro estilo ChatGPT
 
 const AppGames = () => {
   const location = useLocation();

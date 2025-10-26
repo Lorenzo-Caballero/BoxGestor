@@ -38,7 +38,7 @@ const formatCurrency = (value) =>
 const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 /* =========================
-   Helpers para billeteras (uso local para faltantes/agrupados)
+   Helpers para billeteras
    ========================= */
 const walletKey = (w = {}) =>
   `${w?.servicio || ""}|${w?.cbu || ""}|${w?.titular || ""}`;
@@ -131,7 +131,6 @@ const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
 
 /* =========================
    Faltantes por caja
-   - Usa snapshot del backend si existe.
    ========================= */
 const calcFaltantesCajaFromSnapshot = (entry) => {
   try {
@@ -210,7 +209,7 @@ const calcFaltantesCaja = (entry, transferencias, retiros) => {
 };
 
 /* ===============================================================
-   NUEVO: componente que trae el pack del backend para una caja
+   Pack del backend para una caja (tarjetas + tabla) — estilizado
    =============================================================== */
 function CajaDetalleServidor({ cajaId }) {
   const [loading, setLoading] = useState(true);
@@ -244,7 +243,7 @@ function CajaDetalleServidor({ cajaId }) {
     };
   }, [cajaId]);
 
-  if (loading) return <div className="text-sm text-gray-400 mt-2">Cargando resumen de caja #{cajaId}…</div>;
+  if (loading) return <div className="text-sm text-[#9da3ab] mt-2">Cargando resumen de caja #{cajaId}…</div>;
   if (err) return <div className="text-sm text-red-400 mt-2">Error: {err}</div>;
   if (!pack) return null;
 
@@ -257,77 +256,56 @@ function CajaDetalleServidor({ cajaId }) {
     <div className="mt-4 space-y-4">
       {/* Totales del turno */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Retiros reales (T)</div>
-          <div className="font-bold">{fc(resumen.T)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Depósitos (D)</div>
-          <div className="font-bold">{fc(resumen.depositos)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Premios</div>
-          <div className="font-bold">{fc(resumen.premios)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Bonos</div>
-          <div className="font-bold">{fc(resumen.bonos)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Δ Pasivo (ΔL)</div>
-          <div className="font-bold">{fc(resumen.deltaL)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Ganancia (T − (P+Bo))</div>
-          <div className={`font-bold ${Number(resumen.ganancia) >= 0 ? "text-green-400" : "text-red-400"}`}>
-            {fc(resumen.ganancia)}
+        {[
+          ["Retiros reales (T)", resumen.T],
+          ["Depósitos (D)", resumen.depositos],
+          ["Premios", resumen.premios],
+          ["Bonos", resumen.bonos],
+          ["Δ Pasivo (ΔL)", resumen.deltaL],
+          ["Ganancia (T − (P+Bo))", resumen.ganancia, true],
+        ].map(([label, val, isGain], idx) => (
+          <div key={idx} className="rounded-lg p-3 border border-[#3a3f45] bg-[#2a2d33]">
+            <div className="text-[#c7c9cc]">{label}</div>
+            <div className={`font-bold ${isGain ? (Number(val) >= 0 ? "text-emerald-400" : "text-red-400") : ""}`}>
+              {fc(val)}
+            </div>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* House Win & Cash Flow */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">House Win</div>
-          <div className="font-bold">{fc(resumen.houseWin)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Cash Flow (R − P)</div>
-          <div className="font-bold">{fc(resumen.cashFlow)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Δ Billeteras (ΔB)</div>
-          <div className="font-bold">{fc(resumen.deltaB)}</div>
-        </div>
-        <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-          <div className="text-gray-400">Consumo fichas (C)</div>
-          <div className="font-bold">{fc(resumen.C)}</div>
-        </div>
+        {[
+          ["House Win", resumen.houseWin],
+          ["Cash Flow (R − P)", resumen.cashFlow],
+          ["Δ Billeteras (ΔB)", resumen.deltaB],
+          ["Consumo fichas (C)", resumen.C],
+        ].map(([label, val], idx) => (
+          <div key={idx} className="rounded-lg p-3 border border-[#3a3f45] bg-[#2a2d33]">
+            <div className="text-[#c7c9cc]">{label}</div>
+            <div className="font-bold">{fc(val)}</div>
+          </div>
+        ))}
       </div>
 
       {/* Saldos por billetera (del servidor) */}
-      <div className="overflow-x-auto rounded-lg border border-gray-700">
+      <div className="overflow-x-auto rounded-lg border border-[#3a3f45]">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-800 text-gray-300">
+          <thead className="bg-[#2a2d33] text-[#d7d9dc]">
             <tr>
-              <th className="text-left px-3 py-2">Servicio</th>
-              <th className="text-left px-3 py-2">Titular</th>
-              <th className="text-left px-3 py-2">CBU</th>
-              <th className="text-right px-3 py-2">Inicial</th>
-              <th className="text-right px-3 py-2">Transf. (+)</th>
-              <th className="text-right px-3 py-2">Transf. (−)</th>
-              <th className="text-right px-3 py-2">Retiros (→ jefe)</th>
-              <th className="text-right px-3 py-2">Ext. Ingreso</th>
-              <th className="text-right px-3 py-2">Esperado</th>
-              <th className="text-right px-3 py-2">Final</th>
-              <th className="text-right px-3 py-2">Δ</th>
+              {[
+                "Servicio","Titular","CBU","Inicial","Transf. (+)","Transf. (−)",
+                "Retiros (→ jefe)","Ext. Ingreso","Esperado","Final","Δ",
+              ].map((h) => (
+                <th key={h} className="text-left px-3 py-2">{h}</th>
+              ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-700">
+          <tbody className="divide-y divide-[#3a3f45]">
             {filas.map((b, i) => {
               const delta = Number(b.diferencia || 0);
               return (
-                <tr key={i} className="bg-gray-900 hover:bg-gray-800">
+                <tr key={i} className="bg-[#1e1f23] hover:bg-[#22252b]">
                   <td className="px-3 py-2">{b.servicio}</td>
                   <td className="px-3 py-2">{b.titular}</td>
                   <td className="px-3 py-2">{b.cbu}</td>
@@ -338,9 +316,8 @@ function CajaDetalleServidor({ cajaId }) {
                   <td className="px-3 py-2 text-right">{fc(b.extin)}</td>
                   <td className="px-3 py-2 text-right">{fc(b.esperado)}</td>
                   <td className="px-3 py-2 text-right font-semibold">{fc(b.final)}</td>
-                  <td className={`px-3 py-2 text-right ${delta >= 0 ? "text-green-400" : "text-red-400"}`}>
-                    {delta >= 0 ? "+" : ""}
-                    {fc(delta)}
+                  <td className={`px-3 py-2 text-right ${delta >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                    {delta >= 0 ? "+" : ""}{fc(delta)}
                   </td>
                 </tr>
               );
@@ -517,17 +494,17 @@ const CajaAnalytics = () => {
     const g = payload.find((p) => p.dataKey === "ganancia");
     const f = payload.find((p) => p.dataKey === "fichas");
     return (
-      <div className="rounded-lg bg-slate-900/90 border border-slate-700 p-3 text-sm">
-        <div className="font-semibold mb-1">{label}</div>
+      <div className="rounded-xl bg-[#1e1f23]/95 border border-[#3a3f45] p-3 text-sm">
+        <div className="font-semibold mb-1 text-[#e6e6e6]">{label}</div>
         {g && (
-          <div>
-            Ganancia: <span className="font-bold">{formatCurrency(g.value)}</span>
+          <div className="text-[#c7c9cc]">
+            Ganancia: <span className="font-bold text-[#e6e6e6]">{formatCurrency(g.value)}</span>
           </div>
         )}
         {f && (
-          <div>
+          <div className="text-[#c7c9cc]">
             Fichas gastadas:{" "}
-            <span className="font-bold">{Number(f.value).toLocaleString("es-AR")}</span>
+            <span className="font-bold text-[#e6e6e6]">{Number(f.value).toLocaleString("es-AR")}</span>
           </div>
         )}
       </div>
@@ -535,25 +512,27 @@ const CajaAnalytics = () => {
   };
 
   return (
-    <div className="relative p-6 space-y-10 bg-gradient-to-br from-gray-900 to-gray-800 text-white min-h-screen">
+    <div className="min-h-screen bg-[#0e0f13] text-[#e6e6e6] p-6 space-y-10">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Caja Analytics</h1>
+        <h1 className="text-[28px] md:text-[32px] font-semibold tracking-tight text-[#e8e9ea]">
+          Caja Analytics
+        </h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowAllMovements(!showAllMovements)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow transition"
+            className="py-2 px-4 rounded-2xl font-semibold bg-[#2f3336] hover:bg-[#3a3f44] transition-colors"
           >
-            {showAllMovements ? "Resumen Diario" : "Todos los Movimientos"}
+            {showAllMovements ? "Resumen diario" : "Todos los movimientos"}
           </button>
           <button
             onClick={() => setModalOpen(true)}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded shadow-lg transition"
+            className="py-2 px-4 rounded-2xl font-semibold bg-transparent border border-[#3a3f45] hover:bg-[#2a2d33] transition-colors"
           >
             Ver Retiros
           </button>
           <button
             onClick={() => navigate("/billeteras")}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow transition"
+            className="py-2 px-4 rounded-2xl font-semibold bg-transparent border border-[#3a3f45] hover:bg-[#2a2d33] transition-colors"
           >
             Ver Billeteras
           </button>
@@ -568,12 +547,12 @@ const CajaAnalytics = () => {
           min={fechaMin}
           max={fechaMax}
           onChange={(e) => setFecha(e.target.value)}
-          className="bg-gray-700 text-white border p-2 rounded shadow-sm"
+          className="p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
         />
         <select
           value={turno}
           onChange={(e) => setTurno(e.target.value)}
-          className="bg-gray-700 text-white border p-2 rounded shadow-sm"
+          className="p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
         >
           <option value="">Todos los turnos</option>
           {[...new Set(data.map((e) => e.turno))].map((t) => (
@@ -585,7 +564,7 @@ const CajaAnalytics = () => {
         <select
           value={empleado}
           onChange={(e) => setEmpleado(e.target.value)}
-          className="bg-gray-700 text-white border p-2 rounded shadow-sm"
+          className="p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
         >
           <option value="">Todos los empleados</option>
           {[...new Set(data.map((e) => e.empleado_id))].map((id) => (
@@ -599,7 +578,7 @@ const CajaAnalytics = () => {
           placeholder="Buscar empleado..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-gray-700 text-white border p-2 rounded shadow-sm md:col-span-2"
+          className="p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none md:col-span-2"
         />
         <button
           onClick={() => {
@@ -608,20 +587,20 @@ const CajaAnalytics = () => {
             setEmpleado("");
             setSearchTerm("");
           }}
-          className="bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 transition"
+          className="py-2 px-4 rounded-2xl font-semibold bg-transparent border border-[#3a3f45] hover:bg-[#2a2d33] transition-colors"
         >
           Limpiar filtros
         </button>
       </div>
 
       {/* ======= GRÁFICO DE EVOLUCIÓN ======= */}
-      <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4">
+      <div className="bg-[#1e1f23] border border-[#2f3336] rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-semibold">Evolución diaria</h2>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-[#c7c9cc]">
             <input
               type="checkbox"
-              className="accent-cyan-400"
+              className="accent-emerald-400"
               checked={showFichasLine}
               onChange={(e) => setShowFichasLine(e.target.checked)}
             />
@@ -631,17 +610,17 @@ const CajaAnalytics = () => {
         <div className="w-full h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ left: 8, right: 16, top: 10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis dataKey="date" stroke="#9ca3af" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#2a2d33" />
+              <XAxis dataKey="date" stroke="#9da3ab" />
               <YAxis
                 yAxisId="left"
-                stroke="#9ca3af"
+                stroke="#9da3ab"
                 tickFormatter={(v) => `\$${Number(v).toLocaleString("es-AR")}`}
               />
-              <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" hide={!showFichasLine} />
+              <YAxis yAxisId="right" orientation="right" stroke="#9da3ab" hide={!showFichasLine} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <ReferenceLine y={0} yAxisId="left" stroke="#6b7280" />
+              <ReferenceLine y={0} yAxisId="left" stroke="#3a3f45" />
 
               {/* Ganancia en verde */}
               <Line
@@ -670,9 +649,8 @@ const CajaAnalytics = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div className="text-xs text-gray-400 mt-2">
-          * Ganancia = Retiros − (Premios + Bonos). Las fichas se muestran como unidades (eje
-          derecho).
+        <div className="text-xs text-[#9da3ab] mt-2">
+          * Ganancia = Retiros − (Premios + Bonos). Las fichas se muestran como unidades (eje derecho).
         </div>
       </div>
 
@@ -696,9 +674,9 @@ const CajaAnalytics = () => {
             const egreso = premiosDia + bonosDia;
             const ganancia = ingreso - egreso;
 
-            const claseColor = ganancia >= 0 ? "text-green-400" : "text-red-400";
+            const claseColor = ganancia >= 0 ? "text-emerald-400" : "text-red-400";
 
-            // Faltantes por caja del día (usa snapshot si existe)
+            // Faltantes por caja del día
             const faltantesDelDia = detalles
               .map((entry) => {
                 const r = calcFaltantesCaja(entry, transferencias, retiros);
@@ -716,12 +694,11 @@ const CajaAnalytics = () => {
               0
             );
 
-            // Pasivo jugadores (si existe)
             const tienePasivo = resume?.tienePasivo;
             const deltaPasivoDia = resume?.deltaPasivo || 0;
 
             return (
-              <div key={date} className="bg-gray-800 p-4 rounded-xl shadow-md">
+              <div key={date} className="bg-[#1e1f23] border border-[#2f3336] p-4 rounded-2xl">
                 <div
                   className="flex justify-between items-center cursor-pointer"
                   onClick={() => setExpandedDate(expandedDate === date ? null : date)}
@@ -740,10 +717,10 @@ const CajaAnalytics = () => {
                     height: expandedDate === date ? "auto" : 0,
                     opacity: expandedDate === date ? 1 : 0,
                   }}
-                  transition={{ duration: 0.4 }}
+                  transition={{ duration: 0.35 }}
                   className="overflow-hidden"
                 >
-                  <div className="text-gray-300 mt-2 text-sm">
+                  <div className="text-[#c7c9cc] mt-2 text-sm">
                     Ingreso: {formatCurrency(ingreso)} — Egreso: {formatCurrency(egreso)}
                     {tienePasivo && (
                       <span className="ml-3">
@@ -757,15 +734,15 @@ const CajaAnalytics = () => {
                   </div>
 
                   {totalFaltanteDia > 0 && (
-                    <div className="mt-3 p-3 rounded-lg border border-red-500 bg-red-900/30">
+                    <div className="mt-3 p-3 rounded-xl border border-red-500 bg-red-900/25">
                       <div className="font-semibold text-red-300">
-                        ⚠️ Faltantes detectados en el día: {formatCurrency(totalFaltanteDia)}
+                        Faltantes detectados en el día: {formatCurrency(totalFaltanteDia)}
                       </div>
                       <div className="mt-2 grid gap-2">
                         {faltantesDelDia.map((f) => (
                           <div
                             key={`falt-${f.cajaId}`}
-                            className="bg-red-950/40 border border-red-600 rounded p-3"
+                            className="bg-red-950/30 border border-red-600 rounded-xl p-3"
                           >
                             <div className="flex justify-between">
                               <div className="text-sm">
@@ -814,7 +791,7 @@ const CajaAnalytics = () => {
                                         </td>
                                         <td
                                           className={`px-2 py-1 text-right ${
-                                            b.diferencia < 0 ? "text-red-400" : "text-green-400"
+                                            b.diferencia < 0 ? "text-red-400" : "text-emerald-400"
                                           }`}
                                         >
                                           {b.diferencia >= 0 ? "+" : ""}
@@ -834,11 +811,11 @@ const CajaAnalytics = () => {
                   {/* Movimientos del día */}
                   <MovimientosTable entries={detalles} empleados={empleados} />
 
-                  {/* NUEVO: detalle por caja desde el servidor */}
+                  {/* Detalle por caja desde el servidor */}
                   <div className="mt-4 space-y-6">
                     {detalles.map((entry) => (
-                      <div key={`det-${entry.id}`} className="pt-2 border-t border-gray-700">
-                        <h3 className="text-sm font-semibold text-gray-200 mb-2">
+                      <div key={`det-${entry.id}`} className="pt-2 border-t border-[#2f3336]">
+                        <h3 className="text-sm font-semibold text-[#d7d9dc] mb-2">
                           Caja #{entry.id} — {empleados[entry.empleado_id] || `ID ${entry.empleado_id}`}
                         </h3>
                         <CajaDetalleServidor cajaId={entry.id} />
@@ -859,39 +836,45 @@ const CajaAnalytics = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex justify-center items-center px-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-center items-center px-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setModalOpen(false);
+            }}
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-gray-900 rounded-2xl p-6 w-full max-w-5xl shadow-2xl overflow-y-auto max-h-[90vh]"
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#1e1f23] rounded-2xl p-6 w-full max-w-5xl shadow-2xl border border-[#2f3336] overflow-y-auto max-h-[90vh]"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold text-white">Historial de Retiros</h2>
+                <h2 className="text-[22px] font-semibold tracking-tight text-[#e8e9ea]">
+                  Historial de retiros
+                </h2>
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="text-red-400 hover:text-red-600 text-xl font-bold"
+                  className="w-9 h-9 rounded-full bg-transparent border border-[#3a3f45] hover:bg-[#2a2d33] transition-colors"
+                  aria-label="Cerrar"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="grid gap-6">
+              <div className="grid gap-4">
                 {retiros.map((r) => (
                   <motion.div
                     key={r.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="bg-gray-800 rounded-xl shadow-md p-4 border border-gray-700"
+                    exit={{ opacity: 0, y: -16 }}
+                    className="rounded-xl border border-[#3a3f45] bg-[#2a2d33] p-4"
                   >
                     <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h3 className="text-lg text-gray-400 font-semibold">
-                          Caja ID: <span className="text-white font-bold">{r.caja_id}</span>
+                      <div className="text-[#c7c9cc]">
+                        <h3 className="text-lg font-semibold text-[#e6e6e6]">
+                          Caja ID: <span className="font-bold">{r.caja_id}</span>
                         </h3>
-                        <p className="text-sm text-gray-400">Fecha: {formatDateTime(r.fecha)}</p>
+                        <p className="text-sm">Fecha: {formatDateTime(r.fecha)}</p>
                       </div>
                       <div className="text-right">
                         <span className="text-yellow-300 text-xl font-bold">
@@ -901,37 +884,33 @@ const CajaAnalytics = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-gray-700 rounded-lg p-4">
-                        <h4 className="text-sm text-gray-300 mb-2 font-medium uppercase tracking-wide">
-                          Desde Billetera
+                      <div className="rounded-lg p-4 bg-[#1e1f23] border border-[#2f3336]">
+                        <h4 className="text-sm text-[#c7c9cc] mb-2 font-medium uppercase tracking-wide">
+                          Desde billetera
                         </h4>
-                        <p className="text-white">
-                          <span className="font-semibold">Servicio:</span>{" "}
-                          {r.desde_billetera?.servicio}
+                        <p className="text-[#e6e6e6]">
+                          <span className="font-semibold">Servicio:</span> {r.desde_billetera?.servicio}
                         </p>
-                        <p className="text-white">
+                        <p className="text-[#e6e6e6]">
                           <span className="font-semibold">CBU:</span> {r.desde_billetera?.cbu}
                         </p>
-                        <p className="text-white">
-                          <span className="font-semibold">Titular:</span>{" "}
-                          {r.desde_billetera?.titular}
+                        <p className="text-[#e6e6e6]">
+                          <span className="font-semibold">Titular:</span> {r.desde_billetera?.titular}
                         </p>
                       </div>
 
-                      <div className="bg-gray-700 rounded-lg p-4">
-                        <h4 className="text-sm text-gray-300 mb-2 font-medium uppercase tracking-wide">
-                          Hasta Billetera
+                      <div className="rounded-lg p-4 bg-[#1e1f23] border border-[#2f3336]">
+                        <h4 className="text-sm text-[#c7c9cc] mb-2 font-medium uppercase tracking-wide">
+                          Hasta billetera
                         </h4>
-                        <p className="text-white">
-                          <span className="font-semibold">Servicio:</span>{" "}
-                          {r.hasta_billetera?.servicio}
+                        <p className="text-[#e6e6e6]">
+                          <span className="font-semibold">Servicio:</span> {r.hasta_billetera?.servicio}
                         </p>
-                        <p className="text-white">
+                        <p className="text-[#e6e6e6]">
                           <span className="font-semibold">CBU:</span> {r.hasta_billetera?.cbu}
                         </p>
-                        <p className="text-white">
-                          <span className="font-semibold">Titular:</span>{" "}
-                          {r.hasta_billetera?.titular}
+                        <p className="text-[#e6e6e6]">
+                          <span className="font-semibold">Titular:</span> {r.hasta_billetera?.titular}
                         </p>
                       </div>
                     </div>
