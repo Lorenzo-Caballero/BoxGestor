@@ -43,173 +43,13 @@ const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const walletKey = (w = {}) =>
   `${w?.servicio || ""}|${w?.cbu || ""}|${w?.titular || ""}`;
 
-const buildWalletMapFromCaja = (entry) => {
-  const iniciales = Array.isArray(entry?.billeteras_iniciales)
-    ? entry.billeteras_iniciales
-    : Object.values(entry?.billeteras_iniciales || {});
-  const map = new Map();
-  iniciales.forEach((b) => {
-    const k = walletKey(b);
-    const monto = safeNum(b?.monto);
-    map.set(k, {
-      ...b,
-      saldo_inicial: monto,
-      saldo_actual: monto,
-      transf_in: 0,
-      transf_out: 0,
-      retiros: 0,
-    });
-  });
-  return map;
-};
-
-const buildFinalMapFromCaja = (entry) => {
-  const finales = Array.isArray(entry?.billeteras_finales)
-    ? entry.billeteras_finales
-    : Object.values(entry?.billeteras_finales || {});
-  const map = new Map();
-  finales.forEach((b) => map.set(walletKey(b), safeNum(b?.monto)));
-  return map;
-};
-
-const applyMovimientosCaja = (map, cajaId, transferencias, retiros) => {
-  (transferencias || [])
-    .filter((t) => Number(t.caja_id) === Number(cajaId))
-    .forEach((t) => {
-      const m = safeNum(t.monto);
-      const d = t.desde_billetera || {};
-      const h = t.hasta_billetera || {};
-      const kd = walletKey(d);
-      const kh = walletKey(h);
-
-      if (!map.has(kd))
-        map.set(kd, {
-          ...d,
-          saldo_inicial: 0,
-          saldo_actual: 0,
-          transf_in: 0,
-          transf_out: 0,
-          retiros: 0,
-        });
-      if (!map.has(kh))
-        map.set(kh, {
-          ...h,
-          saldo_inicial: 0,
-          saldo_actual: 0,
-          transf_in: 0,
-          transf_out: 0,
-          retiros: 0,
-        });
-
-      map.get(kd).saldo_actual -= m;
-      map.get(kd).transf_out += m;
-      map.get(kh).saldo_actual += m;
-      map.get(kh).transf_in += m;
-    });
-
-  (retiros || [])
-    .filter((r) => Number(r.caja_id) === Number(cajaId))
-    .forEach((r) => {
-      const m = safeNum(r.monto);
-      const d = r.desde_billetera || {};
-      const kd = walletKey(d);
-      if (!map.has(kd))
-        map.set(kd, {
-          ...d,
-          saldo_inicial: 0,
-          saldo_actual: 0,
-          transf_in: 0,
-          transf_out: 0,
-          retiros: 0,
-        });
-      map.get(kd).saldo_actual -= m;
-      map.get(kd).retiros += m;
-    });
-
-  return Array.from(map.values());
-};
 
 /* =========================
    Faltantes por caja
    ========================= */
-const calcFaltantesCajaFromSnapshot = (entry) => {
-  try {
-    const detalle = Array.isArray(entry?.descuadre_detalle)
-      ? entry.descuadre_detalle
-      : JSON.parse(entry?.descuadre_detalle || "[]");
-
-    let totalFaltante = 0;
-    let totalSobrante = 0;
-
-    const porBilletera = (detalle || []).map((d) => {
-      const esp = safeNum(d.esperado);
-      const fin = safeNum(d.final);
-      const dif = safeNum(d.diferencia);
-      if (dif < 0) totalFaltante += -dif;
-      if (dif > 0) totalSobrante += dif;
-      return {
-        servicio: d.servicio || "",
-        titular: d.titular || "",
-        cbu: d.cbu || "",
-        esperado: esp,
-        final: fin,
-        diferencia: dif,
-      };
-    });
-
-    return {
-      totalFaltante,
-      totalSobrante,
-      porBilletera,
-      usedSnapshot: true,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const calcFaltantesCajaRecompute = (entry, transferencias, retiros) => {
-  const base = buildWalletMapFromCaja(entry);
-  const esperadoArr = applyMovimientosCaja(base, entry.id, transferencias, retiros);
-  const esperadoMap = new Map();
-  esperadoArr.forEach((b) => esperadoMap.set(walletKey(b), safeNum(b.saldo_actual)));
-
-  const finalesMap = buildFinalMapFromCaja(entry);
-
-  const keys = new Set([...esperadoMap.keys(), ...finalesMap.keys()]);
-  let totalFaltante = 0;
-  let totalSobrante = 0;
-  const porBilletera = [];
-
-  keys.forEach((k) => {
-    const esp = safeNum(esperadoMap.get(k));
-    const fin = safeNum(finalesMap.get(k));
-    const diff = fin - esp; // <0 faltante, >0 sobrante
-    if (diff < 0) totalFaltante += -diff;
-    if (diff > 0) totalSobrante += diff;
-    const [servicio, cbu, titular] = (k || "").split("|");
-    porBilletera.push({
-      key: k,
-      servicio,
-      titular,
-      cbu,
-      esperado: esp,
-      final: fin,
-      diferencia: diff,
-    });
-  });
-
-  return { totalFaltante, totalSobrante, porBilletera, usedSnapshot: false };
-};
-
-const calcFaltantesCaja = (entry, transferencias, retiros) => {
-  const fromSnap = calcFaltantesCajaFromSnapshot(entry);
-  if (fromSnap) return fromSnap;
-  return calcFaltantesCajaRecompute(entry, transferencias, retiros);
-};
 
 /* ===============================================================
-   Pack del backend para una caja (tarjetas + tabla) — estilizado
+   Detalle de una caja (cards del backend, SIN tabla gigante)
    =============================================================== */
 function CajaDetalleServidor({ cajaId }) {
   const [loading, setLoading] = useState(true);
@@ -227,6 +67,7 @@ function CajaDetalleServidor({ cajaId }) {
         );
         const txt = await res.text();
         const data = JSON.parse(txt);
+
         if (!res.ok || data?.error) {
           throw new Error(data?.error || "Error al obtener balance");
         }
@@ -237,96 +78,183 @@ function CajaDetalleServidor({ cajaId }) {
         if (alive) setLoading(false);
       }
     };
+
     run();
     return () => {
       alive = false;
     };
   }, [cajaId]);
 
-  if (loading) return <div className="text-sm text-[#9da3ab] mt-2">Cargando resumen de caja #{cajaId}…</div>;
+  if (loading)
+    return (
+      <div className="text-sm text-[#9da3ab] mt-2">
+        Cargando resumen de caja #{cajaId}…
+      </div>
+    );
   if (err) return <div className="text-sm text-red-400 mt-2">Error: {err}</div>;
   if (!pack) return null;
 
-  const resumen = pack.resumen?.totales || pack.resumen || {};
-  const filas = pack.billeteras || [];
+  // 🚀 AHORA TOMAMOS EXACTAMENTE LOS CAMPOS QUE DEVUELVE EL BACKEND
+  const resumen = pack.resumen || {};
+
   const fc = (n) =>
-    `$${Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `$${Number(n || 0).toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  // 👇 Cards ajustadas a tu backend ACTUAL
+  const cards = [
+    { label: "Depósitos", value: resumen.depositos },
+    { label: "Premios", value: resumen.premios },
+    { label: "Bonos", value: resumen.bonos },
+    { label: "Costo Bonos", value: resumen.costoBonos },
+    { label: "Costo Fichas", value: resumen.costoFichas },
+    { label: "Consumo Fichas", value: resumen.consumoFichas},
+    { label: "Retiros / Bajadas", value: resumen.T_total },
+     {
+  label: "Ganancia Neta",
+  value: resumen.gananciaReal,
+  isGain: true,
+},
+
+  ];
 
   return (
     <div className="mt-4 space-y-4">
-      {/* Totales del turno */}
+      {/* GRID DE CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
-        {[
-          ["Retiros reales (T)", resumen.T],
-          ["Depósitos (D)", resumen.depositos],
-          ["Premios", resumen.premios],
-          ["Bonos", resumen.bonos],
-          ["Δ Pasivo (ΔL)", resumen.deltaL],
-          ["Ganancia (T − (P+Bo))", resumen.ganancia, true],
-        ].map(([label, val, isGain], idx) => (
-          <div key={idx} className="rounded-lg p-3 border border-[#3a3f45] bg-[#2a2d33]">
-            <div className="text-[#c7c9cc]">{label}</div>
-            <div className={`font-bold ${isGain ? (Number(val) >= 0 ? "text-emerald-400" : "text-red-400") : ""}`}>
-              {fc(val)}
+        {cards.map((c, idx) => (
+          <div
+            key={idx}
+            className="rounded-lg p-3 border border-[#3a3f45] bg-[#2a2d33]"
+          >
+            <div className="text-[#c7c9cc]">{c.label}</div>
+            <div
+              className={`font-bold ${
+                c.isGain
+                  ? Number(c.value) >= 0
+                    ? "text-emerald-400"
+                    : "text-red-400"
+                  : ""
+              }`}
+            >
+              {fc(c.value)}
             </div>
           </div>
         ))}
       </div>
-
-      {/* House Win & Cash Flow */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-        {[
-          ["House Win", resumen.houseWin],
-          ["Cash Flow (R − P)", resumen.cashFlow],
-          ["Δ Billeteras (ΔB)", resumen.deltaB],
-          ["Consumo fichas (C)", resumen.C],
-        ].map(([label, val], idx) => (
-          <div key={idx} className="rounded-lg p-3 border border-[#3a3f45] bg-[#2a2d33]">
-            <div className="text-[#c7c9cc]">{label}</div>
-            <div className="font-bold">{fc(val)}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Saldos por billetera (del servidor) */}
-      <div className="overflow-x-auto rounded-lg border border-[#3a3f45]">
-        <table className="min-w-full text-sm">
-          <thead className="bg-[#2a2d33] text-[#d7d9dc]">
-            <tr>
-              {[
-                "Servicio","Titular","CBU","Inicial","Transf. (+)","Transf. (−)",
-                "Retiros (→ jefe)","Ext. Ingreso","Esperado","Final","Δ",
-              ].map((h) => (
-                <th key={h} className="text-left px-3 py-2">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#3a3f45]">
-            {filas.map((b, i) => {
-              const delta = Number(b.diferencia || 0);
-              return (
-                <tr key={i} className="bg-[#1e1f23] hover:bg-[#22252b]">
-                  <td className="px-3 py-2">{b.servicio}</td>
-                  <td className="px-3 py-2">{b.titular}</td>
-                  <td className="px-3 py-2">{b.cbu}</td>
-                  <td className="px-3 py-2 text-right">{fc(b.inicial)}</td>
-                  <td className="px-3 py-2 text-right">{fc(b.transf_in)}</td>
-                  <td className="px-3 py-2 text-right">{fc(b.transf_out)}</td>
-                  <td className="px-3 py-2 text-right">{fc(b.retiros_al_jefe)}</td>
-                  <td className="px-3 py-2 text-right">{fc(b.extin)}</td>
-                  <td className="px-3 py-2 text-right">{fc(b.esperado)}</td>
-                  <td className="px-3 py-2 text-right font-semibold">{fc(b.final)}</td>
-                  <td className={`px-3 py-2 text-right ${delta >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    {delta >= 0 ? "+" : ""}{fc(delta)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
+}
+
+/* ===============================================================
+   Resumen real del día (usando backend por cada caja del día)
+   =============================================================== */
+function DayResumenServidor({ detalles }) {
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [resumenDia, setResumenDia] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      try {
+        setLoading(true);
+        setErr("");
+        let totalD = 0;
+        let totalT = 0;
+        let totalP = 0;
+        let totalB = 0;
+        let totalDeltaL = 0;
+        let tieneL = false;
+
+        for (const entry of detalles) {
+          const res = await fetch(
+            `https://gestoradmin.store/gestorcaja.php?recurso=balance&caja_id=${entry.id}`
+          );
+          const txt = await res.text();
+          const data = JSON.parse(txt);
+
+          if (!res.ok || data?.error) {
+            throw new Error(data?.error || "Error al obtener balance diario");
+          }
+
+          const r = data.resumen?.totales || data.resumen || {};
+          totalD += safeNum(r.depositos);
+          totalT += safeNum(r.T);
+          totalP += safeNum(r.premios);
+          totalB += safeNum(r.bonos);
+          if (typeof r.deltaL === "number") {
+            totalDeltaL += safeNum(r.deltaL);
+            tieneL = true;
+          } else {
+            const liIni = safeNum(entry.liability_inicio);
+            const liFin = safeNum(entry.liability_fin);
+            if (
+              Number.isFinite(liIni) &&
+              Number.isFinite(liFin) &&
+              (liIni !== 0 || liFin !== 0)
+            ) {
+              totalDeltaL += liFin - liIni;
+              tieneL = true;
+            }
+          }
+        }
+
+        if (!alive) return;
+        setResumenDia({
+          D: totalD,
+          T: totalT,
+          P: totalP,
+          B: totalB,
+          deltaL: totalDeltaL,
+          tieneL,
+        });
+      } catch (e) {
+        if (!alive) return;
+        setErr(String(e.message || e));
+        setResumenDia(null);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+
+    if (detalles && detalles.length) {
+      run();
+    } else {
+      setLoading(false);
+      setResumenDia(null);
+    }
+
+    return () => {
+      alive = false;
+    };
+  }, [JSON.stringify(detalles?.map((d) => d.id) || [])]);
+
+  if (loading)
+    return (
+      <div className="text-xs text-[#9da3ab] mt-2">
+        Calculando Ganancia Real del día…
+      </div>
+    );
+
+  if (err)
+    return (
+      <div className="text-xs text-red-400 mt-2">
+        Error al calcular Ganancia Real del día: {err}
+      </div>
+    );
+
+  if (!resumenDia)
+    return (
+      <div className="text-xs text-[#9da3ab] mt-2">
+        No hay datos para el día.
+      </div>
+    );
+
+  const { T, P, B, HW, deltaL, tieneL } = resumenDia;
+
 }
 
 /* =========================
@@ -366,14 +294,29 @@ const CajaAnalytics = () => {
       const transfData = await resTransf.json();
 
       const empleadosMap = {};
-      (empleadosData || []).forEach((emp) => (empleadosMap[emp.id] = emp.nombre));
+      (empleadosData || []).forEach(
+        (emp) => (empleadosMap[emp.id] = emp.nombre)
+      );
 
       setEmpleados(empleadosMap);
       setRetiros(Array.isArray(retirosData) ? retirosData : []);
       setTransferencias(Array.isArray(transfData) ? transfData : []);
 
-      const cajaArray = Array.isArray(cajasJson.data) ? cajasJson.data : [];
-      const parsed = cajaArray.filter((e) => e.fecha_apertura && e.fecha_cierre);
+      // Soporta varias formas posibles de respuesta
+      const cajaArrayRaw = Array.isArray(cajasJson?.data)
+        ? cajasJson.data
+        : Array.isArray(cajasJson)
+        ? cajasJson
+        : Array.isArray(cajasJson?.cajas)
+        ? cajasJson.cajas
+        : [];
+
+      console.log("APERTURA CAJA JSON", cajasJson, cajaArrayRaw);
+
+      const parsed = cajaArrayRaw.filter(
+        (e) => e.fecha_apertura && e.fecha_cierre
+      );
+
       setData(parsed);
       setFiltered(parsed);
 
@@ -394,7 +337,9 @@ const CajaAnalytics = () => {
     const result = data.filter((item) => {
       const dateMatch = fecha ? item.fecha_apertura.startsWith(fecha) : true;
       const turnoMatch = turno ? item.turno === turno : true;
-      const empleadoMatch = empleado ? Number(item.empleado_id) === Number(empleado) : true;
+      const empleadoMatch = empleado
+        ? Number(item.empleado_id) === Number(empleado)
+        : true;
       return dateMatch && turnoMatch && empleadoMatch;
     });
     setFiltered(result);
@@ -414,20 +359,34 @@ const CajaAnalytics = () => {
   filtered.forEach((entry) => {
     const date = entry.fecha_apertura.split(" ")[0];
 
-    const retirosCaja = sumRetirosCaja(entry.id);
+    // Datos reales desde backend
+    const depositosCaja = safeNum(entry.depositos);
     const premiosCaja = safeNum(entry.premios);
     const bonosCaja = safeNum(entry.bonos);
-    const ingresoCaja = retirosCaja;
+    const retirosCaja = sumRetirosCaja(entry.id);
+
+    // GANANCIA REAL PROVENIENTE DEL BACKEND
+    const gananciaCaja = safeNum(entry.ganancia);
+
+    // GANANCIA REAL = Depósitos – Premios – Bonos
+    const ingresoCaja = depositosCaja;
     const egresoCaja = premiosCaja + bonosCaja;
-    const gananciaCaja = ingresoCaja - egresoCaja;
+   
 
     // Δ pasivo (si existen columnas)
     const liIni = safeNum(entry.liability_inicio);
     const liFin = safeNum(entry.liability_fin);
-    const deltaPasivo = Number.isFinite(liIni) && Number.isFinite(liFin) ? liFin - liIni : null;
-
+    const deltaPasivo =
+      Number.isFinite(liIni) && Number.isFinite(liFin) ? liFin - liIni : null;
+    
     if (!resumen[date])
-      resumen[date] = { ganancia: 0, ingreso: 0, egreso: 0, deltaPasivo: 0, tienePasivo: false };
+      resumen[date] = {
+        ganancia: 0,
+        ingreso: 0,
+        egreso: 0,
+        deltaPasivo: 0,
+        tienePasivo: false,
+      };
     resumen[date].ganancia += gananciaCaja;
     resumen[date].ingreso += ingresoCaja;
     resumen[date].egreso += egresoCaja;
@@ -452,11 +411,17 @@ const CajaAnalytics = () => {
 
   const allSorted = [...filtered]
     .map((entry) => {
-      const retirosCaja = sumRetirosCaja(entry.id);
+      const depositosCaja = safeNum(entry.depositos);
       const premiosCaja = safeNum(entry.premios);
       const bonosCaja = safeNum(entry.bonos);
-      const ganancia = retirosCaja - (premiosCaja + bonosCaja);
-      return { ...entry, ganancia };
+
+      return {
+  ...entry,
+  houseWin: safeNum(entry.houseWin ?? entry.HW ?? entry.hw),
+  gananciaReal: safeNum(entry.gananciaReal ?? entry.g_real ?? entry.ganancia_real),
+};
+
+
     })
     .filter((entry) =>
       (empleados[entry.empleado_id] || "")
@@ -472,20 +437,40 @@ const CajaAnalytics = () => {
     return sortedDates.map(([date]) => {
       const detalles = detallesPorFecha[date] || [];
 
-      const retirosDia = detalles.reduce((acc, e) => acc + safeNum(e._retirosCaja), 0);
-      const premiosDia = detalles.reduce((acc, e) => acc + safeNum(e._premiosCaja), 0);
-      const bonosDia = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
-      const ganancia = retirosDia - (premiosDia + bonosDia);
+      // Depósitos del día (ingresos reales del casino)
+      const depositosDia = detalles.reduce(
+        (acc, e) => acc + safeNum(e.depositos),
+        0
+      );
 
-      // fichas gastadas = max(0, fichas_iniciales - fichas_finales)
-      const fichasGastadas = detalles.reduce((acc, e) => {
-        const ini = safeNum(e.fichas_iniciales);
-        const fin = safeNum(e.fichas_finales);
-        const diff = ini - fin;
-        return acc + (diff > 0 ? diff : 0);
-      }, 0);
+      const premiosDia = detalles.reduce(
+        (acc, e) => acc + safeNum(e._premiosCaja),
+        0
+      );
 
-      return { dateISO: date, date: formatDate(date), ganancia, fichas: fichasGastadas };
+      const bonosDia = detalles.reduce(
+        (acc, e) => acc + safeNum(e._bonosCaja),
+        0
+      );
+
+const gananciaReal = detalles.reduce(
+  (acc, e) => acc + safeNum(e.gananciaReal),
+  0
+);
+
+
+
+  const fichasGastadas = detalles.reduce(
+  (acc, e) => acc + safeNum(e.consumoFichas),
+  0
+);
+
+      return {
+        dateISO: date,
+        date: formatDate(date),
+        ganancia: gananciaReal,
+        fichas: fichasGastadas,
+      };
     });
   }, [sortedDates, detallesPorFecha]);
 
@@ -498,18 +483,52 @@ const CajaAnalytics = () => {
         <div className="font-semibold mb-1 text-[#e6e6e6]">{label}</div>
         {g && (
           <div className="text-[#c7c9cc]">
-            Ganancia: <span className="font-bold text-[#e6e6e6]">{formatCurrency(g.value)}</span>
+            Ganancia:{" "}
+            <span className="font-bold text-[#e6e6e6]">
+              {formatCurrency(g.value)}
+            </span>
           </div>
         )}
         {f && (
           <div className="text-[#c7c9cc]">
             Fichas gastadas:{" "}
-            <span className="font-bold text-[#e6e6e6]">{Number(f.value).toLocaleString("es-AR")}</span>
+            <span className="font-bold text-[#e6e6e6]">
+              {Number(f.value).toLocaleString("es-AR", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+            </span>
           </div>
         )}
       </div>
     );
   };
+
+  /* ======================
+     Totales del período filtrado
+     ====================== */
+  const totalesFiltro = Object.values(resumen).reduce(
+    (acc, dia) => {
+      acc.depositos += dia.ingreso; // ingreso = depósitos reales
+      acc.premiosYBonos += dia.egreso;
+      acc.ganancia += dia.ganancia;
+
+      if (dia.tienePasivo) {
+        acc.deltaPasivo += dia.deltaPasivo;
+        acc.tienePasivo = true;
+      }
+      return acc;
+    },
+    {
+      depositos: 0,
+      premiosYBonos: 0,
+      ganancia: 0,
+      deltaPasivo: 0,
+      tienePasivo: false,
+    }
+  );
+
+  const noHayDatos = !data.length;
 
   return (
     <div className="min-h-screen bg-[#0e0f13] text-[#e6e6e6] p-6 space-y-10">
@@ -593,240 +612,238 @@ const CajaAnalytics = () => {
         </button>
       </div>
 
-      {/* ======= GRÁFICO DE EVOLUCIÓN ======= */}
-      <div className="bg-[#1e1f23] border border-[#2f3336] rounded-2xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-semibold">Evolución diaria</h2>
-          <label className="flex items-center gap-2 text-sm text-[#c7c9cc]">
-            <input
-              type="checkbox"
-              className="accent-emerald-400"
-              checked={showFichasLine}
-              onChange={(e) => setShowFichasLine(e.target.checked)}
-            />
-            Mostrar fichas gastadas
-          </label>
+      {noHayDatos && (
+        <div className="text-center text-red-400 mt-10">
+          No hay datos disponibles.
         </div>
-        <div className="w-full h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ left: 8, right: 16, top: 10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2d33" />
-              <XAxis dataKey="date" stroke="#9da3ab" />
-              <YAxis
-                yAxisId="left"
-                stroke="#9da3ab"
-                tickFormatter={(v) => `\$${Number(v).toLocaleString("es-AR")}`}
-              />
-              <YAxis yAxisId="right" orientation="right" stroke="#9da3ab" hide={!showFichasLine} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <ReferenceLine y={0} yAxisId="left" stroke="#3a3f45" />
+      )}
 
-              {/* Ganancia en verde */}
-              <Line
-                type="monotone"
-                dataKey="ganancia"
-                yAxisId="left"
-                name="Ganancia (ARS)"
-                stroke="#22c55e"
-                strokeWidth={2.2}
-                dot={false}
-                activeDot={{ r: 5 }}
-              />
-
-              {/* Fichas en violeta */}
-              {showFichasLine && (
-                <Line
-                  type="monotone"
-                  dataKey="fichas"
-                  yAxisId="right"
-                  name="Fichas gastadas"
-                  stroke="#8b5cf6"
-                  strokeWidth={1.8}
-                  dot={false}
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="text-xs text-[#9da3ab] mt-2">
-          * Ganancia = Retiros − (Premios + Bonos). Las fichas se muestran como unidades (eje derecho).
-        </div>
-      </div>
-
-      {/* ======= LISTADO (resumen/expandible) ======= */}
-      {showAllMovements ? (
-        <div className="overflow-x-auto">
-          <MovimientosTable entries={allSorted} empleados={empleados} />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold">Ganancia diaria</h2>
-
-          {sortedDates.map(([date, resume]) => {
-            const detalles = detallesPorFecha[date] || [];
-
-            const retirosDia = detalles.reduce((acc, e) => acc + safeNum(e._retirosCaja), 0);
-            const premiosDia = detalles.reduce((acc, e) => acc + safeNum(e._premiosCaja), 0);
-            const bonosDia = detalles.reduce((acc, e) => acc + safeNum(e._bonosCaja), 0);
-
-            const ingreso = retirosDia;
-            const egreso = premiosDia + bonosDia;
-            const ganancia = ingreso - egreso;
-
-            const claseColor = ganancia >= 0 ? "text-emerald-400" : "text-red-400";
-
-            // Faltantes por caja del día
-            const faltantesDelDia = detalles
-              .map((entry) => {
-                const r = calcFaltantesCaja(entry, transferencias, retiros);
-                return {
-                  cajaId: entry.id,
-                  empleado: empleados[entry.empleado_id] || `ID ${entry.empleado_id}`,
-                  fechaCierre: entry.fecha_cierre,
-                  ...r,
-                };
-              })
-              .filter((x) => x.totalFaltante > 0);
-
-            const totalFaltanteDia = faltantesDelDia.reduce(
-              (acc, it) => acc + it.totalFaltante,
-              0
-            );
-
-            const tienePasivo = resume?.tienePasivo;
-            const deltaPasivoDia = resume?.deltaPasivo || 0;
-
-            return (
-              <div key={date} className="bg-[#1e1f23] border border-[#2f3336] p-4 rounded-2xl">
-                <div
-                  className="flex justify-between items-center cursor-pointer"
-                  onClick={() => setExpandedDate(expandedDate === date ? null : date)}
-                >
-                  <span className="text-lg font-semibold">{formatDate(date)}</span>
-                  <span className={`text-sm font-bold ${claseColor}`}>
-                    {ganancia >= 0
-                      ? `+ ${formatCurrency(ganancia)}`
-                      : `- ${formatCurrency(Math.abs(ganancia))}`}
-                  </span>
+      {!noHayDatos && (
+        <>
+          {/* RESUMEN DEL PERÍODO FILTRADO */}
+          <div className="bg-[#1e1f23] border border-[#2f3336] rounded-2xl p-4">
+            <h2 className="text-lg font-semibold mb-3">
+              Resumen del período filtrado
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-xl p-3 border border-[#3a3f45] bg-[#2a2d33]">
+                <div className="text-[#c7c9cc]">Depósitos totales (D)</div>
+                <div className="font-bold">
+                  {formatCurrency(totalesFiltro.depositos)}
                 </div>
-
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{
-                    height: expandedDate === date ? "auto" : 0,
-                    opacity: expandedDate === date ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.35 }}
-                  className="overflow-hidden"
+              </div>
+              <div className="rounded-xl p-3 border border-[#3a3f45] bg-[#2a2d33]">
+                <div className="text-[#c7c9cc]">Premios + Bonos</div>
+                <div className="font-bold">
+                  {formatCurrency(totalesFiltro.premiosYBonos)}
+                </div>
+              </div>
+              <div className="rounded-xl p-3 border border-[#3a3f45] bg-[#2a2d33]">
+                <div className="text-[#c7c9cc]">
+                  Ganancia Real 
+                </div>
+                <div
+                  className={`font-bold ${
+                    totalesFiltro.ganancia >= 0
+                      ? "text-emerald-400"
+                      : "text-red-400"
+                  }`}
                 >
-                  <div className="text-[#c7c9cc] mt-2 text-sm">
-                    Ingreso: {formatCurrency(ingreso)} — Egreso: {formatCurrency(egreso)}
-                    {tienePasivo && (
-                      <span className="ml-3">
-                        | Δ Pasivo jugadores:{" "}
-                        <span className="text-yellow-300">
-                          {deltaPasivoDia >= 0 ? "+ " : "- "}
-                          {formatCurrency(Math.abs(deltaPasivoDia))}
-                        </span>
-                      </span>
-                    )}
+                  {formatCurrency(totalesFiltro.ganancia)}
+                </div>
+              </div>
+              {totalesFiltro.tienePasivo && (
+                <div className="rounded-xl p-3 border border-[#3a3f45] bg-[#2a2d33]">
+                  <div className="text-[#c7c9cc]">Δ Pasivo jugadores (∑ΔL)</div>
+                  <div className="font-bold text-yellow-300">
+                    {totalesFiltro.deltaPasivo >= 0 ? "+ " : "- "}
+                    {formatCurrency(Math.abs(totalesFiltro.deltaPasivo))}
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-                  {totalFaltanteDia > 0 && (
-                    <div className="mt-3 p-3 rounded-xl border border-red-500 bg-red-900/25">
-                      <div className="font-semibold text-red-300">
-                        Faltantes detectados en el día: {formatCurrency(totalFaltanteDia)}
-                      </div>
-                      <div className="mt-2 grid gap-2">
-                        {faltantesDelDia.map((f) => (
+          {/* ======= GRÁFICO DE EVOLUCIÓN ======= */}
+          <div className="bg-[#1e1f23] border border-[#2f3336] rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold">Evolución diaria</h2>
+              <label className="flex items-center gap-2 text-sm text-[#c7c9cc]">
+                <input
+                  type="checkbox"
+                  className="accent-emerald-400"
+                  checked={showFichasLine}
+                  onChange={(e) => setShowFichasLine(e.target.checked)}
+                />
+                Mostrar fichas gastadas
+              </label>
+            </div>
+            <div className="w-full h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartData}
+                  margin={{ left: 8, right: 16, top: 10, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d33" />
+                  <XAxis dataKey="date" stroke="#9da3ab" />
+                  <YAxis
+                    yAxisId="left"
+                    stroke="#9da3ab"
+                    tickFormatter={(v) =>
+                      `\$${Number(v).toLocaleString("es-AR")}`
+                    }
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#9da3ab"
+                    hide={!showFichasLine}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <ReferenceLine y={0} yAxisId="left" stroke="#3a3f45" />
+
+                  {/* Ganancia en verde */}
+                  <Line
+                    type="monotone"
+                    dataKey="ganancia"
+                    yAxisId="left"
+                    name="Ganancia (ARS)"
+                    stroke="#22c55e"
+                    strokeWidth={2.2}
+                    dot={false}
+                    activeDot={{ r: 5 }}
+                  />
+
+                  {/* Fichas en violeta */}
+                  {showFichasLine && (
+                    <Line
+                      type="monotone"
+                      dataKey="fichas"
+                      yAxisId="right"
+                      name="Fichas gastadas"
+                      stroke="#8b5cf6"
+                      strokeWidth={1.8}
+                      dot={false}
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="text-xs text-[#9da3ab] mt-2">
+              * Ganancia del día = Depósitos − (Premios + Bonos). Las fichas se
+              muestran como unidades (eje derecho).
+            </div>
+          </div>
+
+          {/* ======= LISTADO (resumen/expandible) ======= */}
+          {showAllMovements ? (
+            <div className="overflow-x-auto">
+              <MovimientosTable entries={allSorted} empleados={empleados} />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">Ganancia Real diaria</h2>
+
+              {sortedDates.map(([date, resume]) => {
+                const detalles = detallesPorFecha[date] || [];
+
+                const premiosDia = detalles.reduce(
+                  (acc, e) => acc + safeNum(e._premiosCaja),
+                  0
+                );
+                const bonosDia = detalles.reduce(
+                  (acc, e) => acc + safeNum(e._bonosCaja),
+                  0
+                );
+                const depositosDia = detalles.reduce(
+                  (acc, e) => acc + safeNum(e.depositos),
+                  0
+                );
+
+                const ingreso = depositosDia;
+                const egreso = premiosDia + bonosDia;
+  const gananciaRealDia = detalles.reduce(
+  (acc, e) => acc + safeNum(e.gananciaReal),
+  0
+);
+
+
+
+                const claseColor = gananciaRealDia >= 0 ? "text-emerald-400" : "text-red-400";
+
+
+                
+              
+                const tienePasivo = resume?.tienePasivo;
+
+                return (
+                  <div
+                    key={date}
+                    className="bg-[#1e1f23] border border-[#2f3336] p-4 rounded-2xl"
+                  >
+                    <div
+                      className="flex justify-between items-center cursor-pointer"
+                      onClick={() =>
+                        setExpandedDate(
+                          expandedDate === date ? null : date
+                        )
+                      }
+                    >
+                      <span className="text-lg font-semibold">
+                        {formatDate(date)}
+                      </span>
+                      <span className={`text-sm font-bold ${claseColor}`}>
+  {gananciaRealDia >= 0
+  ? `+ ${formatCurrency(gananciaRealDia)}`
+  : `- ${formatCurrency(Math.abs(gananciaRealDia))}`}
+</span>
+</div>  
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{
+                        height: expandedDate === date ? "auto" : 0,
+                        opacity: expandedDate === date ? 1 : 0,
+                      }}
+                      transition={{ duration: 0.35 }}
+                      className="overflow-hidden"
+                    >
+                      {/* Resumen real del día, usando backend (formato 1) */}
+                      <DayResumenServidor detalles={detalles} />
+
+                  
+                      
+                  
+
+                      {/* Movimientos del día */}
+                      <MovimientosTable
+                        entries={detalles}
+                        empleados={empleados}
+                      />
+
+                      {/* Detalle por caja desde el servidor (solo cards, sin tabla grande) */}
+                      <div className="mt-4 space-y-6">
+                        {detalles.map((entry) => (
                           <div
-                            key={`falt-${f.cajaId}`}
-                            className="bg-red-950/30 border border-red-600 rounded-xl p-3"
+                            key={`det-${entry.id}`}
+                            className="pt-2 border-t border-[#2f3336]"
                           >
-                            <div className="flex justify-between">
-                              <div className="text-sm">
-                                <div>
-                                  <span className="text-red-200 font-semibold">Caja:</span> #{f.cajaId}
-                                </div>
-                                <div>
-                                  <span className="text-red-200 font-semibold">Empleado:</span>{" "}
-                                  {f.empleado}
-                                </div>
-                                <div>
-                                  <span className="text-red-200 font-semibold">Cierre:</span>{" "}
-                                  {formatDateTime(f.fechaCierre)}
-                                </div>
-                              </div>
-                              <div className="text-right text-red-300 font-bold">
-                                Faltante: {formatCurrency(f.totalFaltante)}
-                              </div>
-                            </div>
-
-                            <div className="mt-2 overflow-x-auto">
-                              <table className="min-w-full text-xs">
-                                <thead>
-                                  <tr className="text-red-200">
-                                    <th className="text-left px-2 py-1">Servicio</th>
-                                    <th className="text-left px-2 py-1">Titular</th>
-                                    <th className="text-left px-2 py-1">CBU</th>
-                                    <th className="text-right px-2 py-1">Esperado</th>
-                                    <th className="text-right px-2 py-1">Final</th>
-                                    <th className="text-right px-2 py-1">Dif.</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {f.porBilletera
-                                    .filter((b) => safeNum(b.diferencia) !== 0)
-                                    .map((b, idx) => (
-                                      <tr key={idx} className="text-red-100">
-                                        <td className="px-2 py-1">{b.servicio}</td>
-                                        <td className="px-2 py-1">{b.titular}</td>
-                                        <td className="px-2 py-1">{b.cbu}</td>
-                                        <td className="px-2 py-1 text-right">
-                                          {formatCurrency(b.esperado)}
-                                        </td>
-                                        <td className="px-2 py-1 text-right">
-                                          {formatCurrency(b.final)}
-                                        </td>
-                                        <td
-                                          className={`px-2 py-1 text-right ${
-                                            b.diferencia < 0 ? "text-red-400" : "text-emerald-400"
-                                          }`}
-                                        >
-                                          {b.diferencia >= 0 ? "+" : ""}
-                                          {formatCurrency(b.diferencia)}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                </tbody>
-                              </table>
-                            </div>
+                            <h3 className="text-sm font-semibold text-[#d7d9dc] mb-2">
+                              Caja #{entry.id} —{" "}
+                              {empleados[entry.empleado_id] ||
+                                `ID ${entry.empleado_id}`}
+                            </h3>
+                            <CajaDetalleServidor cajaId={entry.id} />
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Movimientos del día */}
-                  <MovimientosTable entries={detalles} empleados={empleados} />
-
-                  {/* Detalle por caja desde el servidor */}
-                  <div className="mt-4 space-y-6">
-                    {detalles.map((entry) => (
-                      <div key={`det-${entry.id}`} className="pt-2 border-t border-[#2f3336]">
-                        <h3 className="text-sm font-semibold text-[#d7d9dc] mb-2">
-                          Caja #{entry.id} — {empleados[entry.empleado_id] || `ID ${entry.empleado_id}`}
-                        </h3>
-                        <CajaDetalleServidor cajaId={entry.id} />
-                      </div>
-                    ))}
+                    </motion.div>
                   </div>
-                </motion.div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal de Retiros */}
@@ -874,7 +891,9 @@ const CajaAnalytics = () => {
                         <h3 className="text-lg font-semibold text-[#e6e6e6]">
                           Caja ID: <span className="font-bold">{r.caja_id}</span>
                         </h3>
-                        <p className="text-sm">Fecha: {formatDateTime(r.fecha)}</p>
+                        <p className="text-sm">
+                          Fecha: {formatDateTime(r.fecha)}
+                        </p>
                       </div>
                       <div className="text-right">
                         <span className="text-yellow-300 text-xl font-bold">
@@ -889,13 +908,16 @@ const CajaAnalytics = () => {
                           Desde billetera
                         </h4>
                         <p className="text-[#e6e6e6]">
-                          <span className="font-semibold">Servicio:</span> {r.desde_billetera?.servicio}
+                          <span className="font-semibold">Servicio:</span>{" "}
+                          {r.desde_billetera?.servicio}
                         </p>
                         <p className="text-[#e6e6e6]">
-                          <span className="font-semibold">CBU:</span> {r.desde_billetera?.cbu}
+                          <span className="font-semibold">CBU:</span>{" "}
+                          {r.desde_billetera?.cbu}
                         </p>
                         <p className="text-[#e6e6e6]">
-                          <span className="font-semibold">Titular:</span> {r.desde_billetera?.titular}
+                          <span className="font-semibold">Titular:</span>{" "}
+                          {r.desde_billetera?.titular}
                         </p>
                       </div>
 
@@ -904,13 +926,16 @@ const CajaAnalytics = () => {
                           Hasta billetera
                         </h4>
                         <p className="text-[#e6e6e6]">
-                          <span className="font-semibold">Servicio:</span> {r.hasta_billetera?.servicio}
+                          <span className="font-semibold">Servicio:</span>{" "}
+                          {r.hasta_billetera?.servicio}
                         </p>
                         <p className="text-[#e6e6e6]">
-                          <span className="font-semibold">CBU:</span> {r.hasta_billetera?.cbu}
+                          <span className="font-semibold">CBU:</span>{" "}
+                          {r.hasta_billetera?.cbu}
                         </p>
                         <p className="text-[#e6e6e6]">
-                          <span className="font-semibold">Titular:</span> {r.hasta_billetera?.titular}
+                          <span className="font-semibold">Titular:</span>{" "}
+                          {r.hasta_billetera?.titular}
                         </p>
                       </div>
                     </div>
