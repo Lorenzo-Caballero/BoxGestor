@@ -48,28 +48,14 @@ export default function MovimientosTable({ entries = [], empleados = {} }) {
               ? entry.billeteras_finales.reduce((acc, b) => acc + Number(b?.monto || 0), 0)
               : Object.values(entry?.billeteras_finales || {}).reduce((acc, m) => acc + Number(m || 0), 0);
 
-            // 1) Si viene desde el padre, usarlo
-            const fromParent =
-              typeof entry.ganancia === "number" ? Number(entry.ganancia) : null;
+            // HOUSEWIN REAL DEL TURNO
+const houseWin = Number(
+  entry.houseWin ?? entry.HW ?? entry.hw ?? 0
+);
 
-            // 2) Si no, usar retiros - (premios + bonos) cuando haya auxiliares
-            const hasAux =
-              entry._retirosCaja !== undefined ||
-              entry._premiosCaja !== undefined ||
-              entry._bonosCaja !== undefined;
+const color =
+  houseWin >= 0 ? "text-green-400" : "text-red-400";
 
-            const byRetirosPremiosBonos = hasAux
-              ? Number(entry._retirosCaja || 0) -
-                (Number(entry._premiosCaja || 0) + Number(entry._bonosCaja || 0))
-              : null;
-
-            // 3) Fallback final
-            const computedFallback = finales - iniciales;
-
-            const ganancia =
-              fromParent ?? byRetirosPremiosBonos ?? computedFallback;
-
-            const color = ganancia >= 0 ? "text-green-400" : "text-red-400";
 
             return (
               <tr key={entry.id} className="hover:bg-gray-800 border-b border-gray-700">
@@ -126,9 +112,9 @@ export default function MovimientosTable({ entries = [], empleados = {} }) {
                 </td>
 
                 <td className={`p-2 text-right font-bold ${color}`}>
-                  {ganancia >= 0 ? "+ " : "- "}
-                  {formatCurrency(Math.abs(ganancia))}
-                </td>
+  {houseWin >= 0 ? "+ " : "- "}
+  {formatCurrency(Math.abs(houseWin))}
+</td>
               </tr>
             );
           })}

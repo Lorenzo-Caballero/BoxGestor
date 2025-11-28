@@ -88,6 +88,7 @@ const AperturaDeCaja = () => {
         turno,
         billeteras: billeterasConDatos,
         fichas_iniciales: parseEntero(fichas),
+        // Este valor el backend lo guarda como liability_inicio / saldo de jugadores al inicio
         saldo_jugadores_inicial: parseEntero(saldoJugadoresInicio),
       };
 
@@ -132,12 +133,9 @@ const AperturaDeCaja = () => {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      // Fondo y tipografía tipo ChatGPT
       className="min-h-screen bg-[#0e0f13] text-[#e6e6e6] flex items-center justify-center px-4 py-10"
     >
-      {/* Panel central */}
       <div className="w-full max-w-5xl bg-[#1e1f23] border border-[#2f3336] rounded-2xl shadow-2xl p-8 md:p-10">
-        {/* Título sobrio y profesional */}
         <div className="mb-8 text-center">
           <h2 className="text-[28px] md:text-[32px] font-semibold tracking-tight text-[#e8e9ea]">
             Apertura de caja
@@ -201,13 +199,14 @@ const AperturaDeCaja = () => {
                   <div className="text-sm text-[#c7c9cc]">{b.titular}</div>
                   <div className="text-xs mt-1 text-[#9da3ab]">{recortarCBU(b.cbu)}</div>
 
-                  {/* Selector de uso SOLO cuando está seleccionada */}
                   {selected && (
                     <div
                       className="mt-3"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <label className="block text-xs mb-1 text-[#c7c9cc]">Uso en este turno</label>
+                      <label className="block text-xs mb-1 text-[#c7c9cc]">
+                        Uso en este turno
+                      </label>
                       <select
                         value={usoTurno[id] || "operativa"}
                         onChange={(e) =>
@@ -229,22 +228,30 @@ const AperturaDeCaja = () => {
         {/* Montos iniciales */}
         {billeterasSeleccionadas.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-base font-semibold mb-4 text-[#d7d9dc]">Montos iniciales</h3>
+            <h3 className="text-base font-semibold mb-4 text-[#d7d9dc]">
+              Montos iniciales
+            </h3>
             <div className="grid md:grid-cols-2 gap-4">
               {billeterasSeleccionadas.map((id) => {
                 const billeteraInfo = billeterasDisponibles.find((b) => Number(b.id) === id);
                 return (
                   <div key={id} className="bg-[#2a2d33] border border-[#3a3f45] rounded-xl p-4">
-                    <div className="font-semibold text-[#e6e6e6]">{billeteraInfo?.servicio}</div>
+                    <div className="font-semibold text-[#e6e6e6]">
+                      {billeteraInfo?.servicio}
+                    </div>
                     <div className="text-sm text-[#c7c9cc]">{billeteraInfo?.titular}</div>
                     <div className="text-xs mb-2 text-[#9da3ab]">
                       {recortarCBU(billeteraInfo?.cbu)}
                     </div>
 
-                    <label className="text-xs opacity-80 text-[#c7c9cc]">Uso en este turno</label>
+                    <label className="text-xs opacity-80 text-[#c7c9cc]">
+                      Uso en este turno
+                    </label>
                     <select
                       value={usoTurno[id] || "operativa"}
-                      onChange={(e) => setUsoTurno((prev) => ({ ...prev, [id]: e.target.value }))}
+                      onChange={(e) =>
+                        setUsoTurno((prev) => ({ ...prev, [id]: e.target.value }))
+                      }
                       className="w-full p-2 mt-1 mb-3 rounded-lg bg-[#202329] border border-[#3a3f45]"
                     >
                       <option value="operativa">Billetera para cobrar</option>
@@ -277,7 +284,9 @@ const AperturaDeCaja = () => {
 
         {/* Fichas iniciales */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">Fichas iniciales</label>
+          <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">
+            Fichas iniciales
+          </label>
           <input
             type="text"
             inputMode="numeric"
@@ -319,7 +328,6 @@ const AperturaDeCaja = () => {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={enviarAperturaCaja}
-          // Botón gris (sin verde), en línea con el UI de ChatGPT
           className="w-full py-3 rounded-2xl font-semibold text-[15px] bg-[#2f3336] hover:bg-[#3a3f44] transition-colors"
         >
           Abrir caja
