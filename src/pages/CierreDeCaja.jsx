@@ -13,10 +13,7 @@ export default function CierreDeCaja({ onCerrarCaja }) {
   const [billeterasExternas, setBilleterasExternas] = useState([]);
 
   const [montosCierre, setMontosCierre] = useState({});
-  const [depositosPorBilletera, setDepositosPorBilletera] = useState({}); // *** NUEVO ***
-
-  const [totalDepositosRaw, setTotalDepositosRaw] = useState(""); // *** NUEVO ***
-  const [totalDepositosFocused, setTotalDepositosFocused] = useState(false); // *** NUEVO ***
+  const [depositosPorBilletera, setDepositosPorBilletera] = useState({});
 
   const [transferencias, setTransferencias] = useState([]);
   const [retirosExternos, setRetirosExternos] = useState([]);
@@ -124,7 +121,9 @@ export default function CierreDeCaja({ onCerrarCaja }) {
         const aperturaIdLocal = apertura?.id ?? null;
 
         setDatosApertura({
-          empleado: empInfo ? empInfo.nombre : `ID ${apertura?.empleado_id ?? "-"}`,
+          empleado: empInfo
+            ? empInfo.nombre
+            : `ID ${apertura?.empleado_id ?? "-"}`,
           turno: apertura?.turno || "-",
           montosIniciales,
         });
@@ -163,7 +162,6 @@ export default function CierreDeCaja({ onCerrarCaja }) {
   const handleMontoCierre = (key, val) =>
     setMontosCierre((prev) => ({ ...prev, [key]: val }));
 
-  // *** NUEVO ***
   const handleDeposito = (key, val) =>
     setDepositosPorBilletera((prev) => ({ ...prev, [key]: val }));
 
@@ -180,8 +178,12 @@ export default function CierreDeCaja({ onCerrarCaja }) {
 
   const eliminarTransferencia = (i) =>
     setTransferencias((prev) => prev.filter((_, idx) => idx !== i));
+
   const eliminarRetiro = (i) =>
     setRetirosExternos((prev) => prev.filter((_, idx) => idx !== i));
+
+  const eliminarPremio = (i) =>
+    setPremios((prev) => prev.filter((_, idx) => idx !== i));
 
   const handlePremioAgregado = (nuevo) => {
     if (!nuevo) return;
@@ -190,76 +192,62 @@ export default function CierreDeCaja({ onCerrarCaja }) {
 
   // cierre de caja
   const cerrarCaja = async () => {
-
-    const faltantes = billeterasDisponibles.some(
-      (b) =>
-        montosCierre[walletKey(b)] === undefined ||
-montosCierre[walletKey(b)] === ""
- ||
-        depositosPorBilletera[walletKey(b)] === undefined || // *** NUEVO ***
-        depositosPorBilletera[walletKey(b)] === ""
-    );
+    const faltantes = billeterasDisponibles.some((b) => {
+      const key = walletKey(b);
+      return (
+        montosCierre[key] === undefined ||
+        montosCierre[key] === "" ||
+        depositosPorBilletera[key] === undefined ||
+        depositosPorBilletera[key] === ""
+      );
+    });
 
     if (
       faltantes ||
       bonosRaw === "" ||
       fichasRaw === "" ||
-      saldoJugadoresFinRaw === "" ||
-      totalDepositosRaw === "" // *** NUEVO ***
+      saldoJugadoresFinRaw === ""
     ) {
       setMensaje("Completá todos los campos antes de cerrar la caja.");
       return;
     }
-const sumaDepositos = billeterasDisponibles.reduce((acc, b) => {
-  return acc + toNumber(depositosPorBilletera[walletKey(b)] || 0);
-}, 0);
 
-if (sumaDepositos !== toNumber(totalDepositosRaw)) {
-  setMensaje("La suma de depósitos por billetera no coincide con el total general.");
-  return;
-}
+    if (!window.confirm("¿Seguro que querés cerrar la caja?")) return;
 
-    if (!window.confirm("¿Seguro que querés cerrar la caja?"))
+    try {
+      // transferencias internas
+      for (const t of transferencias) {
+        await fetch(`${API}?recurso=transferencias`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            caja_id: aperturaId,
+            monto: Number(t.monto) || 0,
+            desde_billetera: t.desde,
+            hasta_billetera: t.hasta,
+          }),
+        });
+      }
+
+      // retiros externos
+      for (const r of retirosExternos) {
+        await fetch(`${API}?recurso=retiros`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            caja_id: aperturaId,
+            monto: Number(r.monto) || 0,
+            desde_billetera: r.desde,
+            hasta_billetera: r.hasta || { servicio: "Retiro (Jefe)" },
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("Error registrando movimientos:", e);
+      setMensaje("Error registrando movimientos.");
       return;
+    }
 
-    // registrar transferencias y retiros...
-   try {
-  // Registrar transferencias internas
-  for (const t of transferencias) {
-    await fetch(`${API}?recurso=transferencias`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        caja_id: aperturaId,
-        monto: Number(t.monto) || 0,
-        desde_billetera: t.desde,
-        hasta_billetera: t.hasta,
-      }),
-    });
-  }
-
-  // Registrar retiros externos
-  for (const r of retirosExternos) {
-    await fetch(`${API}?recurso=retiros`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        caja_id: aperturaId,
-        monto: Number(r.monto) || 0,
-        desde_billetera: r.desde,
-        hasta_billetera: r.hasta || { servicio: "Retiro (Jefe)" },
-      }),
-    });
-  }
-} catch (e) {
-  console.error("Error registrando movimientos:", e);
-  setMensaje("Error registrando movimientos.");
-  return;
-}
-
-
-    // *** NUEVO ***
-    // Construimos array de depósitos por billetera
     const depositosArray = billeterasDisponibles.map((b) => ({
       id: Number(b?.id || 0),
       servicio: b?.servicio,
@@ -268,7 +256,6 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
       monto: toNumber(depositosPorBilletera[walletKey(b)] || 0),
     }));
 
-    // billeteras finales
     const billeteras_finales = billeterasDisponibles.map((b) => ({
       id: Number(b?.id || 0),
       servicio: b?.servicio,
@@ -277,6 +264,10 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
       monto: toNumber(montosCierre[walletKey(b)] || 0),
     }));
 
+    const totalDepositosCalculado = billeterasDisponibles.reduce((acc, b) => {
+      return acc + toNumber(depositosPorBilletera[walletKey(b)] || 0);
+    }, 0);
+
     const body = {
       caja_id: aperturaId,
       billeteras_finales,
@@ -284,8 +275,8 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
       bonos: toNumber(bonosRaw),
       fichas_finales: toNumber(fichasRaw),
       saldo_jugadores_final: toNumber(saldoJugadoresFinRaw),
-      depositos: depositosArray, // *** NUEVO ***
-      depositos_totales: toNumber(totalDepositosRaw), // *** NUEVO ***
+      depositos: depositosArray,
+      depositos_totales: totalDepositosCalculado,
       empleado_id: empleadoId || null,
     };
 
@@ -334,16 +325,9 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
     );
   }
 
-  const totalDepositosDisplay = totalDepositosFocused
-    ? formatMilesAR(totalDepositosRaw)
-    : totalDepositosRaw !== ""
-    ? formatARS(Number(totalDepositosRaw))
-    : "";
-
   return (
     <div className="min-h-screen bg-[#0e0f13] text-[#e6e6e6] flex items-start justify-center px-4 py-10">
       <div className="w-full max-w-4xl bg-[#1e1f23] border border-[#2f3336] rounded-2xl shadow-2xl p-8 md:p-10">
-
         <div className="mb-8 text-center">
           <h2 className="text-[28px] md:text-[32px] font-semibold text-[#e8e9ea]">
             Cierre de caja
@@ -385,15 +369,16 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
                     <div className="text-xs text-[#c7c9cc]">{b?.titular}</div>
                     <div className="text-[10px] text-[#9da3ab]">
                       {b?.cbu
-                        ? `${String(b.cbu).slice(0, 6)}...${String(b.cbu).slice(
-                            -4
-                          )}`
+                        ? `${String(b.cbu).slice(0, 6)}...${String(
+                            b.cbu
+                          ).slice(-4)}`
                         : ""}
                     </div>
                   </div>
 
                   <div className="text-right text-sm text-[#c7c9cc]">
-                    Inicial: {formatARS(datosApertura.montosIniciales[key] || 0)}
+                    Inicial:{" "}
+                    {formatARS(datosApertura.montosIniciales[key] || 0)}
                   </div>
                 </div>
 
@@ -422,7 +407,8 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
                 {/* DEPOSITOS POR BILLETERA */}
                 <div>
                   <label className="block text-xs text-[#9da3ab] mb-1">
-                    Depósitos totales de esta billetera
+                    Depósitos totales de esta billetera (provenientes de
+                    jugadores)
                   </label>
                   <input
                     type="text"
@@ -431,9 +417,9 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
                     value={
                       depositosPorBilletera[key] !== undefined &&
                       depositosPorBilletera[key] !== ""
-                        ? Number(depositosPorBilletera[key]).toLocaleString(
-                            "es-AR"
-                          )
+                        ? Number(
+                            depositosPorBilletera[key]
+                          ).toLocaleString("es-AR")
                         : ""
                     }
                     onChange={(e) => {
@@ -448,31 +434,8 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
           })}
         </div>
 
-        {/* TOTAL DE DEPOSITOS (MANUAL) */}
-        <div className="mb-10">
-          <label className="block text-sm font-medium text-[#c7c9cc] mb-2">
-            Total general de depósitos del turno
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            className="w-full p-3 rounded-xl bg-[#2a2d33] border border-[#3a3f45] focus:outline-none"
-            value={totalDepositosDisplay}
-            onFocus={() => setTotalDepositosFocused(true)}
-            onBlur={() => setTotalDepositosFocused(false)}
-            onChange={(e) =>
-              setTotalDepositosRaw(onlyDigits(e.target.value))
-            }
-            placeholder="Ej: 250000"
-          />
-          <p className="text-xs text-[#9da3ab] mt-1">
-            Este valor NO se calcula automáticamente. El empleado debe ingresarlo.
-          </p>
-        </div>
-
         {/* Valores restantes */}
         <div className="grid md:grid-cols-2 gap-6">
-
           <div>
             <label className="block text-sm font-medium mb-2 text-[#c7c9cc]">
               Premios pagados
@@ -582,25 +545,7 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
           <p className="mt-4 text-center text-red-400">{mensaje}</p>
         )}
 
-        {/* Modales */}
-        <RegistroRetiros
-          visible={mostrarModalMovimientos}
-          onClose={() => setMostrarModalMovimientos(false)}
-          cajaId={aperturaId}
-          billeteras={billeterasDisponibles}
-          billeterasExternas={billeterasExternas}
-          onGuardarMovimiento={agregarMovimiento}
-        />
-
-        <RegistrarPremio
-          visible={mostrarModalPremios}
-          onClose={() => setMostrarModalPremios(false)}
-          cajaId={aperturaId}
-          billeteras={billeterasDisponibles}
-          onPremioAgregado={handlePremioAgregado}
-        />
-
-        {/* Listados */}
+        {/* Listado de premios EDITABLE */}
         {premios.length > 0 && (
           <div className="mt-8 text-sm">
             <h3 className="font-semibold mb-2 text-[#d7d9dc]">
@@ -610,13 +555,22 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
               {premios.map((p, i) => (
                 <li key={`p-${i}`}>
                   {formatARS(p.monto)} —{" "}
-                  {p.servicio || p.billetera_servicio || `Billetera #${p.billetera_id}`}
+                  {p.servicio ||
+                    p.billetera_servicio ||
+                    `Billetera #${p.billetera_id}`}
+                  <button
+                    className="ml-2 text-red-400 hover:underline"
+                    onClick={() => eliminarPremio(i)}
+                  >
+                    eliminar
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
+        {/* Listados de transferencias y retiros */}
         {transferencias.length > 0 && (
           <div className="mt-8 text-sm">
             <h3 className="font-semibold mb-2 text-[#d7d9dc]">
@@ -661,6 +615,24 @@ if (sumaDepositos !== toNumber(totalDepositosRaw)) {
             </ul>
           </div>
         )}
+
+        {/* Modales */}
+        <RegistroRetiros
+          visible={mostrarModalMovimientos}
+          onClose={() => setMostrarModalMovimientos(false)}
+          cajaId={aperturaId}
+          billeteras={billeterasDisponibles}
+          billeterasExternas={billeterasExternas}
+          onGuardarMovimiento={agregarMovimiento}
+        />
+
+        <RegistrarPremio
+          visible={mostrarModalPremios}
+          onClose={() => setMostrarModalPremios(false)}
+          cajaId={aperturaId}
+          billeteras={billeterasDisponibles}
+          onPremioAgregado={handlePremioAgregado}
+        />
       </div>
     </div>
   );
